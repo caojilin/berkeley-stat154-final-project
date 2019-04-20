@@ -39,13 +39,17 @@ pairs(image2_nozero[,c(4, 5, 6)])
 
 
 image1_nozero <- image1[-which(image1$expert_label == 0),]
+rownames(image1_nozero) <- 1:nrow(image1_nozero)
 ggplot(data = image1_nozero) + geom_point(aes(x = CORR, y = rescale(image1_nozero$NDAI, to = c(-0.5, 1)), color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
 
 image2_nozero <- image2[-which(image2$expert_label == 0),]
+rownames(image2_nozero) <- 1:nrow(image2_nozero)
 ggplot(data = image2_nozero) + geom_point(aes(x = CORR, y = NDAI, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red"))
 
-ggplot(data = image2_nozero) + geom_histogram(aes(x = rescale(image2_nozero$NDAI, to = c(-0.5, 1))))
 image3_nozero <- image3[-which(image3$expert_label == 0),]
+rownames(image3_nozero) <- 1:nrow(image3_nozero)
+ggplot(data = image2_nozero) + geom_histogram(aes(x = rescale(image2_nozero$NDAI, to = c(-0.5, 1))))
+
 ```
 
 ```{r}
@@ -78,6 +82,7 @@ validation_index_1 <- remaining_index_1[-training_index_1]
 train_1 <- image1_nozero[training_index_1,]
 validation_1 <- image1_nozero[validation_index_1,]
 test_1 <- image1_nozero[test_index_1,]
+rownames(image1_nozero)
 
 # Image2 Split
 image2_nozero$image <- rep(2, nrow(image2_nozero))
@@ -110,6 +115,39 @@ test <- rbind(test_1, test_2, test_3)
 ```
 
 ```{r}
+split_set <- function(data, num) {
+    data$image <- rep(num, nrow(data))
+    all_indices <- 1:nrow(data)
+    test_index <- sample(all_indices, nrow(data) * 0.2)
+    remaining_index <- all_indices[-test_index]
+    training_index <- sample(remaining_index, length(remaining_index) * 0.8)
+    validation_index <- remaining_index[-training_index]
+    train <- data[training_index,]
+    validation <- data[validation_index,]
+    test <- data[test_index,]
+    return(list(train = train,validation = validation,test = test))
+}
+
+data1 <- split_set(image1_nozero, 1)
+data2 <- split_set(image2_nozero, 2)
+data3 <- split_set(image3_nozero, 3)
+train <- rbind(data1$train, 
+               data2$train, data3$train)
+
+validation <- rbind(data1$validation,
+                    data2$validation,
+                    data3$validation)
+
+test <- rbind(data1$test,
+                    data2$test,
+                    data3$test)
+
+
+```
+
+
+
+```{r}
 # Method 2: Combine the data and then split randomly 
 images <- rbind(image1_nozero, image2_nozero, image3_nozero)
 index_all <- 1:nrow(images)
@@ -121,11 +159,24 @@ validation_indices <- remaining_indices[-training_indices]
 train_M2 <- images[training_indices,]
 validation_M2 <- images[validation_indices,]
 test_M2 <- images[test_indices,]
-table(train_M2$image) / sum(table(train_M2$image)
+table(train_M2$image) / sum(table(train_M2$image))
 
 ```
 
+```{r}
+baseline_preds <- -1
+# validation accuracy
+mean(baseline_preds == validation$expert_label)
+# test accuracy
+mean(baseline_preds == test$expert_label)
+test_index
+```
 
+
+d)
+- Method 1 is preferred over Method 2.
+- The way method 1 is constructed ensures that in training, validation and test sets, there are equal amounts of data from each image. 
+- The table at the end of Method 2, however, suggests that the random selection tends to contain more data from one image than another.
 
 
 
