@@ -1,0 +1,62 @@
+---
+title: "Proj2_154"
+author: "Sizhuo (Cindy) Liu"
+date: "4/20/2019"
+output: pdf_document
+---
+
+1. Data Collection and Exploration
+
+The purpose of the study is to to propose 
+
+```{r}
+# Load Image Data & Add Column Names
+image1 <- read.table("/Users/sizhuoliu/Desktop/project2/image_data/image1.txt")
+colnames(image1) <- c('y_coordinate', 'x_coordinate', 'expert_label', 'NDAI', 'SD', 'CORR', 'RA_DF', 'RA_CF', 'RA_BF', 'RA_AF', 'RA_AN')
+image1$expert_label <- as.factor(image1$expert_label)
+image2 <- read.table("/Users/sizhuoliu/Desktop/project2/image_data/image2.txt")
+colnames(image2) <- c('y_coordinate', 'x_coordinate', 'expert_label', 'NDAI', 'SD', 'CORR', 'RA_DF', 'RA_CF', 'RA_BF', 'RA_AF', 'RA_AN')
+image2$expert_label <- as.factor(image2$expert_label)
+image3 <- read.table("/Users/sizhuoliu/Desktop/project2/image_data/image3.txt")
+colnames(image3) <- c('y_coordinate', 'x_coordinate', 'expert_label', 'NDAI', 'SD', 'CORR', 'RA_DF', 'RA_CF', 'RA_BF', 'RA_AF', 'RA_AN')
+image3$expert_label <- as.factor(image3$expert_label)
+
+```
+
+```{r}
+# Plot Well-Labeled Map
+library(ggplot2)
+ggplot(data = image1) + geom_point(aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white"))
+ggplot(data = image2) + geom_point(aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white"))
+ggplot(data = image3) + geom_point(aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white")) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white"))
+```
+
+```{r}
+# Observe pair-wise relationships between variables ??? Plots different from in the paper
+library(scales)
+pairs(image1_nozero[,c(4, 5, 6)])
+pairs(image2_nozero[,c(4, 5, 6)])
+
+
+image1_nozero <- image1[-which(image1$expert_label == 0),]
+ggplot(data = image1_nozero) + geom_point(aes(x = CORR, y = rescale(image1_nozero$NDAI, to = c(-0.5, 1)), color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
+
+image2_nozero <- image2[-which(image2$expert_label == 0),]
+ggplot(data = image2_nozero) + geom_point(aes(x = CORR, y = NDAI, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red"))
+
+ggplot(data = image2_nozero) + geom_histogram(aes(x = rescale(image2_nozero$NDAI, to = c(-0.5, 1))))
+```
+
+```{r}
+# Pairwise Relationships with Expert Label 
+ggplot(data = image1_nozero) + geom_boxplot(aes(y = CORR, color = expert_label))
+boxplot(image1_nozero$CORR)
+
+ggplot(data = image1_nozero) + geom_histogram(aes(x = CORR, color = expert_label, fill = expert_label, alpha = 0.5))
+
+ggplot(data = image1_nozero) + geom_histogram(aes(x = SD, color = expert_label, fill = expert_label, alpha = 0.5)) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red"))
+
+ggplot(data = image1_nozero) + geom_histogram(aes(x = NDAI, color = expert_label, fill = expert_label, alpha = 0.5)) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red"))
+```
+
+
