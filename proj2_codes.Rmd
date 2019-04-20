@@ -11,13 +11,13 @@ The purpose of the study is to to propose
 
 ```{r}
 # Load Image Data & Add Column Names
-image1 <- read.table("/Users/sizhuoliu/Desktop/project2/image_data/image1.txt")
+image1 <- read.table("image_data/image1.txt")
 colnames(image1) <- c('y_coordinate', 'x_coordinate', 'expert_label', 'NDAI', 'SD', 'CORR', 'RA_DF', 'RA_CF', 'RA_BF', 'RA_AF', 'RA_AN')
 image1$expert_label <- as.factor(image1$expert_label)
-image2 <- read.table("/Users/sizhuoliu/Desktop/project2/image_data/image2.txt")
+image2 <- read.table("image_data/image2.txt")
 colnames(image2) <- c('y_coordinate', 'x_coordinate', 'expert_label', 'NDAI', 'SD', 'CORR', 'RA_DF', 'RA_CF', 'RA_BF', 'RA_AF', 'RA_AN')
 image2$expert_label <- as.factor(image2$expert_label)
-image3 <- read.table("/Users/sizhuoliu/Desktop/project2/image_data/image3.txt")
+image3 <- read.table("image_data/image3.txt")
 colnames(image3) <- c('y_coordinate', 'x_coordinate', 'expert_label', 'NDAI', 'SD', 'CORR', 'RA_DF', 'RA_CF', 'RA_BF', 'RA_AF', 'RA_AN')
 image3$expert_label <- as.factor(image3$expert_label)
 
@@ -45,6 +45,7 @@ image2_nozero <- image2[-which(image2$expert_label == 0),]
 ggplot(data = image2_nozero) + geom_point(aes(x = CORR, y = NDAI, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red"))
 
 ggplot(data = image2_nozero) + geom_histogram(aes(x = rescale(image2_nozero$NDAI, to = c(-0.5, 1))))
+image3_nozero <- image3[-which(image3$expert_label == 0),]
 ```
 
 ```{r}
@@ -58,5 +59,90 @@ ggplot(data = image1_nozero) + geom_histogram(aes(x = SD, color = expert_label, 
 
 ggplot(data = image1_nozero) + geom_histogram(aes(x = NDAI, color = expert_label, fill = expert_label, alpha = 0.5)) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red"))
 ```
+
+2. Preparation
+
+```{r}
+# a) Data Split
+
+# Method 1: Split the data from each image individually and then combine 
+# Andrew Ng's Recommendation: Training: 60%, Validation: 20%, Testing: 20%
+# Image1 Split
+image1_nozero$image <- rep(1, nrow(image1_nozero))
+all_indices_1 <- 1:nrow(image1_nozero)
+test_index_1 <- sample(all_indices, nrow(image1_nozero) * 0.2)
+remaining_index_1 <- all_indices_1[-test_index_1]
+training_index_1 <- sample(remaining_index_1, length(remaining_index_1) * 0.8)
+validation_index_1 <- remaining_index_1[-training_index_1]
+
+train_1 <- image1_nozero[training_index_1,]
+validation_1 <- image1_nozero[validation_index_1,]
+test_1 <- image1_nozero[test_index_1,]
+
+# Image2 Split
+image2_nozero$image <- rep(2, nrow(image2_nozero))
+all_indices_2 <- 1:nrow(image2_nozero)
+test_index_2 <- sample(all_indices, nrow(image2_nozero) * 0.2)
+remaining_index_2 <- all_indices_2[-test_index_2]
+training_index_2 <- sample(remaining_index_2, length(remaining_index_2) * 0.8)
+validation_index_2 <- remaining_index_2[-training_index_2]
+
+train_2 <- image2_nozero[training_index_2,]
+validation_2 <- image2_nozero[validation_index_2,]
+test_2 <- image2_nozero[test_index_2,]
+
+# Image3 Split
+image3_nozero$image <- rep(3, nrow(image3_nozero))
+all_indices_3 <- 1:nrow(image3_nozero)
+test_index_3 <- sample(all_indices, nrow(image3_nozero) * 0.3)
+remaining_index_3 <- all_indices_3[-test_index_3]
+training_index_3 <- sample(remaining_index_3, length(remaining_index_3) * 0.8)
+validation_index_3 <- remaining_index_3[-training_index_3]
+
+train_3 <- image3_nozero[training_index_3,]
+validation_3 <- image3_nozero[validation_index_3,]
+test_3 <- image3_nozero[test_index_3,]
+
+# Combine
+train <- rbind(train_1, train_2, train_3)
+validation <- rbind(validation_1, validation_2, validation_3)
+test <- rbind(test_1, test_2, test_3)
+```
+
+```{r}
+# Method 2: Combine the data and then split randomly 
+images <- rbind(image1_nozero, image2_nozero, image3_nozero)
+index_all <- 1:nrow(images)
+test_indices <- sample(index_all, nrow(images) * 0.2)
+remaining_indices <- index_all[-test_indices]
+training_indices <- sample(remaining_indices, length(remaining_indices) * 0.8)
+validation_indices <- remaining_indices[-training_indices]
+
+train_M2 <- images[training_indices,]
+validation_M2 <- images[validation_indices,]
+test_M2 <- images[test_indices,]
+table(train_M2$image) / sum(table(train_M2$image)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
