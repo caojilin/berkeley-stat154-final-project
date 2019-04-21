@@ -34,8 +34,8 @@ ggplot(data = image3) + geom_point(aes(x = x_coordinate, y = y_coordinate, color
 ```{r}
 # Observe pair-wise relationships between variables ??? Plots different from in the paper
 library(scales)
-pairs(image1_nozero[,c(4, 5, 6)])
-pairs(image2_nozero[,c(4, 5, 6)])
+# pairs(image1_nozero[,c(4, 5, 6)])
+# pairs(image2_nozero[,c(4, 5, 6)])
 
 
 image1_nozero <- image1[-which(image1$expert_label == 0),]
@@ -116,7 +116,6 @@ validation_indices <- remaining_indices[-training_indices]
 train_M2 <- images[training_indices,]
 validation_M2 <- images[validation_indices,]
 test_M2 <- images[test_indices,]
-table(train_M2$image) / sum(table(train_M2$image))
 
 ```
 
@@ -147,11 +146,17 @@ CVgeneric <- function(classifier, features, labels, K, loss) {
   library(caret)
   folds <- createFolds(labels, k = K)
   error <- rep(0, K)
+  accuracy <- rep(0, K)
   for (i in 1: K) {
+
     test <- features[folds[[i]],]
     train <- features[-folds[[i]],]
-    label.train <- labels[folds[[i]]]
-    label.test <- labels[-folds[[i]]]
+    
+    label.test <- labels[folds[[i]]]
+    label.train <- labels[-folds[[i]]]
+    
+    # print(length(label.train))
+    # print(nrow(train))
     train$label <- label.train
     # full.test <- cbind(test, label.test)
     # features_added <- paste(colnames(features), collapse = " + ")
@@ -159,10 +164,11 @@ CVgeneric <- function(classifier, features, labels, K, loss) {
     fit <- glm(label ~ SD + CORR + NDAI, family = binomial(link = 'logit'),data=train)
     y_hat <- predict(fit, test, type = 'response')
     error[i] <- loss(label.test, y_hat)
+    y_hat <- y_hat > 0.5
+    accuracy[i] <- mean(label.test == y_hat)
   }
-  return (error)
+  return (accuracy)
 }
-
 
 
 
@@ -174,7 +180,6 @@ CVgeneric <- function(classifier, features, labels, K, loss) {
 
 # Split 1
 train_validation <- rbind(train, validation)
-train_validation
 logistic_mod1 <- glm(expert_label ~ SD + CORR + NDAI, 
                     family = binomial(link = 'logit'), data = train_validation)
 
@@ -184,6 +189,13 @@ logistic_loss <- function(labels, y_hat) {
 
 CVgeneric(logistic_mod1, train_validation[,-3], train_validation$expert_label, K = 5, logistic_loss)
 
+# Split 2
+train_validation_M2 <- rbind(train_M2, validation_M2)
+logistic_mod2 <- glm(expert_label ~ SD + CORR + NDAI, 
+                    family = binomial(link = 'logit'), data = train_validation_M2)
+CVgeneric(logistic_mod2, train_validation_M2[,-3], train_validation_M2$expert_label, K = 5, logistic_loss)
+
+# qda, lda, svm, knn, random forest, neural network 
 ```
 
 ```{r}
