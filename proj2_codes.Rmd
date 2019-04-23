@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(caret)
 library(ggplot2)
 library(scales)
+library(e1071)
+library(class)
 
 ```
 
@@ -260,44 +262,43 @@ train_validationM2=rbind(trainM2,validationM2)
 # QDA
 
 # Split 1
-train_validation <- rbind(train, validation)
-qda_mod1 <- qda(expert_label ~ SD + CORR + NDAI, 
-                     data = train_validation)
 
-test_qda <- predict(qda_mod1, test)
-mean(test_qda$class == test$expert_label)
+CV2 <- function(data, K) {
+    folds <- createFolds(1:nrow(data), k = K)
+    accuracy <- rep(0, K)
+    for (i in 1: K) {
+      test <- data[folds[[i]],]
+      train.cv <- data[-folds[[i]],]
+      
+      qda_mod1 <- qda(expert_label ~ SD + CORR + NDAI, 
+                     data = train.cv)
+      y_hat = predict(qda_mod1, test)
+      
+      accuracy[i] = mean(y_hat$class == test$expert_label)
+    }
+    return (mean(accuracy))
+}
+CV2(train_validation, K = 5)
 
 # Split 2
-train_validation_M2 <- rbind(train_M2, validation_M2)
-qda_mod2 <- qda(expert_label ~ SD + CORR + NDAI, 
-                     data = train_validation_M2)
+# TODO
 
-mean(predict(qda_mod2, test)$class == test$expert_label)
 
 ```
 
 ```{r}
 # LDA
-
 # Split 1
-train_validation <- rbind(train, validation)
-lda_mod1 <- lda(expert_label ~ SD + CORR + NDAI, 
-                     data = train_validation)
-
-test_lda <- predict(lda_mod1, test)
-mean(test_lda$class == test$expert_label)
+#todo
 
 # Split 2
-train_validation_M2 <- rbind(train_M2, validation_M2)
-lda_mod2 <- lda(expert_label ~ SD + CORR + NDAI, 
-                     data = train_validation_M2)
-
-mean(predict(lda_mod2, test)$class == test$expert_label)
+#todo
 ```
 
 ```{r}
 # KNN
-library(class)
+
+##TODO
 train_filtered <- train[,c(4,5,6)]
 test_filtered <- test[,c(4,5,6)]
 pred_error <- data.frame(index = 1:5, pred_error = rep(0, 5))
@@ -311,7 +312,6 @@ system.time(knn_pred <- knn(train_filtered, test_filtered, train$expert_label, k
 
 ```{r}
 # SVM
-library(e1071)
 
 # Split 1
 train_validation <- rbind(train, validation)
@@ -323,12 +323,26 @@ svm_mod1 <- svm(expert_label ~ SD + CORR + NDAI,
 test_lda <- predict(lda_mod1, test)
 mean(test_lda$class == test$expert_label)
 
-# Split 2
-train_validation_M2 <- rbind(train_M2, validation_M2)
-lda_mod2 <- lda(expert_label ~ SD + CORR + NDAI, 
-                     data = train_validation_M2)
+CV4 <- function(data, K) {
+    folds <- createFolds(1:nrow(data), k = K)
+    accuracy <- rep(0, K)
+    for (i in 1: K) {
+      test <- data[folds[[i]],]
+      train.cv <- data[-folds[[i]],]
+      
+      qda_mod1 <- qda(expert_label ~ SD + CORR + NDAI, 
+                     data = train.cv)
+      y_hat = predict(qda_mod1, test)
+      
+      accuracy[i] = mean(y_hat$class == test$expert_label)
+    }
+    return (mean(accuracy))
+}
+CV4(train_validation, K = 5)
 
-mean(predict(lda_mod2, test)$class == test$expert_label)
+
+# Split 2
+
 ```
 
 
