@@ -208,6 +208,7 @@ mean(baseline_preds == testing$expert_label)
 ```{r}
 # c) Ask??? Can we use NDAI, CORR, SD?
 # TODO 
+colnames(image1_nozero)
 ```
 
 
