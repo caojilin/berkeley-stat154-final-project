@@ -386,55 +386,86 @@ CV5(train_validation, K = 5)
 # https://rischanlab.github.io/SVM.html
 
 # Split 2
+CV5(train_validationM2, K = 5)
 
 ```
 
 
 ```{r}
 # RandomForest
+CV6 <- function(data, K, ntree) {
+    folds <- createFolds(1:nrow(data), k = K)
+    accuracy <- rep(0, K)
+    for (i in 1: K) {
+      test <- data[folds[[i]],]
+      train.cv <- data[-folds[[i]],]
+      
+      fit_randomForest <- randomForest(expert_label ~ SD + CORR + NDAI, 
+                   data = train.cv,
+                   ntree = ntree)
+      y_hat = predict(fit_randomForest, test)
+      
+      accuracy[i] = mean(y_hat == test$expert_label)
+    }
+    return (mean(accuracy))
+}
+
 # Split 1
-system.time(fit_randomForest <- randomForest(expert_label ~ SD + CORR + NDAI, 
-                   data = train_validation,
-                   ntree = 3))
+CV6(train_validation, K = 5, ntree=3)
 
-y_hat <- predict(fit_randomForest, testing)
-mean(y_hat == testing$expert_label)
+# Split 2
+CV6(train_validationM2, K = 5, ntree=3)
+
 ```
 
-```{r}
-system.time(fit.decision <- rpart(expert_label ~ SD + CORR + NDAI, 
-                   data = train_validation))
-y_hat <- predict(fit_randomForest, testing)
-mean(y_hat == testing$expert_label)
-```
 
+#3 b)
 ```{r}
 # Compute AUC for predicting Class with the model
 
 # logistic regression
-logistic_mod1 <- glm(expert_label ~ SD + CORR + NDAI,
-                       data = train.cv,
-                       family = "binomial")
-y_hat_logistic <- predict(logistic_mod1, newdata = testing)
-y_hat_logistic <- y_hat_logistic > 0.9
-y_hat_logistic[which(y_hat_logistic == FALSE)] <- 0
-y_hat_logistic[which(y_hat_logistic == TRUE)] <- 1
+system.time(logistic_mod <- glm(expert_label ~ SD + CORR + NDAI,
+                       data = train_validation,
+                       family = "binomial"))
+y_hat_logistic <- predict(logistic_mod, newdata = testing, type="response")
 roc.curve(testing$expert_label, y_hat_logistic)
 
+y_hat_logistic <- y_hat_logistic > 0.5
+y_hat_logistic[which(y_hat_logistic == FALSE)] <- 0
+y_hat_logistic[which(y_hat_logistic == TRUE)] <- 1
 confusionMatrix(data = as.factor(y_hat_logistic), testing$expert_label)
 
 # qda
-qda_mod1 <- qda(expert_label ~ SD + CORR + NDAI, 
+qda_mod <- qda(expert_label ~ SD + CORR + NDAI, 
                      data = train_validation)
 
-roc.curve(testing$expert_label, predict(qda_mod1, testing)$class)
+roc.curve(testing$expert_label, predict(qda_mod, testing)$posterior[,1])
 
 # lda
-lda_mod1 <- lda(expert_label ~ SD + CORR + NDAI, 
+lda_mod <- lda(expert_label ~ SD + CORR + NDAI, 
                      data = train_validation)
-roc.curve(testing$expert_label, predict(lda_mod1, testing)$class)
+roc.curve(testing$expert_label, predict(lda_mod, testing)$posterior[,1])
+
+# knn
+
+train_filtered <- train_validation[,c(4,5,6)]
+test_filtered <- testing[,c(4,5,6)]
+
+y_hat = knn(train_filtered, test_filtered, train_validation$expert_label, k = 10,
+                     prob = TRUE)
+
+prob <- attr(y_hat, "prob")
+
+roc.curve(testing$expert_label, prob)
 
 
+# random forests
+system.time(fit_randomForest <- randomForest(expert_label ~ SD + CORR + NDAI, 
+                   data = train_validation, importance= T,
+                   ntree = 3))
+
+y_hat <- predict(fit_randomForest, testing, type = "prob")
+roc.curve(testing$expert_label, y_hat[,1])
 ```
 
 
