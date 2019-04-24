@@ -7,12 +7,13 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+# Load Required Packages
 library(caret)
 library(ggplot2)
 library(scales)
 library(e1071)
 library(class)
-
+library(randomForest)
 ```
 
 1. Data Collection and Exploration
@@ -31,7 +32,7 @@ image3 <- read.table("image_data/image3.txt")
 colnames(image3) <- c('y_coordinate', 'x_coordinate', 'expert_label', 'NDAI', 'SD', 'CORR', 'RA_DF', 'RA_CF', 'RA_BF', 'RA_AF', 'RA_AN')
 image3$expert_label <- as.factor(image3$expert_label)
 
-
+# Remove zero ('unlabeled') values 
 image1_nozero <- image1[-which(image1$expert_label == 0),]
 rownames(image1_nozero) <- 1:nrow(image1_nozero)
 
@@ -43,7 +44,7 @@ rownames(image3_nozero) <- 1:nrow(image3_nozero)
 ```
 
 ```{r, eval=F}
-# Plot Well-Labeled Map
+# 1 a) lot Well-Labeled Map
 ggplot(data = image1) + geom_point(aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white"))
 ggplot(data = image2) + geom_point(aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white"))
 ggplot(data = image3) + geom_point(aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white")) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white"))
@@ -78,7 +79,7 @@ ggplot(data = image1_nozero) + geom_histogram(aes(x = NDAI, color = expert_label
 2. Preparation
 
 ```{r}
-#Method 1
+# Method 1
 split_squares <- function(df) {
   y_steps <- seq(range(df$y_coordinate)[1], 
                    range(df$y_coordinate)[2], length.out = 3)
@@ -174,6 +175,7 @@ validationM2 <- rbind(data1$validation,
 testM2 <- rbind(data1$test,
                     data2$test,
                     data3$test)
+
 ```
 
 b)
@@ -186,10 +188,15 @@ The trivial classifier will have a high accuracy when the original image has mos
 training$expert_label[which(training$expert_label == -1)] <- 0
 testing$expert_label[which(testing$expert_label == -1)] <- 0
 validation$expert_label[which(validation$expert_label == -1)] <- 0
+trainM2$expert_label[which(trainM2$expert_label == -1)] <- 0
+testM2$expert_label[which(testM2$expert_label == -1)] <- 0
+validationM2$expert_label[which(validationM2$expert_label == -1)] <- 0
 training$expert_label <- factor(training$expert_label)
 testing$expert_label <- factor(testing$expert_label)
 validation$expert_label <- factor(validation$expert_label)
-
+trainM2$expert_label <- factor(trainM2$expert_label)
+testM2$expert_label <- factor(testM2$expert_label)
+validationM2$expert_label <- factor(validationM2$expert_label)
 
 baseline_preds <- 0
 # validation accuracy
@@ -200,7 +207,7 @@ mean(baseline_preds == testing$expert_label)
 
 ```{r}
 # c) Ask??? Can we use NDAI, CORR, SD?
-
+# TODO 
 ```
 
 
@@ -252,9 +259,8 @@ CV <- function(data, K) {
 CV(train_validation, 5)
 
 # Split 2
-train_validationM2=rbind(trainM2,validationM2)
-# TODO
-
+train_validationM2 <- rbind(trainM2,validationM2)
+CV(train_validationM2, 5)
 # qda, lda, svm, knn, random forest, neural network 
 ```
 
@@ -262,7 +268,6 @@ train_validationM2=rbind(trainM2,validationM2)
 # QDA
 
 # Split 1
-
 CV2 <- function(data, K) {
     folds <- createFolds(1:nrow(data), k = K)
     accuracy <- rep(0, K)
@@ -281,8 +286,7 @@ CV2 <- function(data, K) {
 CV2(train_validation, K = 5)
 
 # Split 2
-# TODO
-
+CV2(train_validationM2, K = 5)
 
 ```
 
@@ -340,6 +344,7 @@ CV4 <- function(data, K) {
 }
 CV4(train_validation, K = 5)
 
+# https://rischanlab.github.io/SVM.html
 
 # Split 2
 
@@ -347,35 +352,18 @@ CV4(train_validation, K = 5)
 
 
 ```{r}
-# test
-classifier <- logistic_mod1
-features <- train_validation[,-3]
-labels <- train_validation$expert_label
-K <- 5
-loss <- logistic_loss
+# Split 1
+system.time(fit_randomForest <- randomForest(expert_label ~ SD + CORR + NDAI, 
+                   data = train_validation,
+                   ntree = 1))
 
-  library(caret)
-  folds <- createFolds(labels, k = K)
-  error <- rep(0, K)
-  for (i in 1: K) {
-    test <- features[folds[[i]],]
-    train <- features[-folds[[i]],]
-    label.train <- labels[folds[[i]]]
-    label.test <- labels[-folds[[i]]]
-    train$label <- label.train
-    # full.test <- cbind(test, label.test)
-    # features_added <- paste(colnames(features), collapse = " + ")
-    # formula <- paste('labels', ' ~ ', features_added)
-    fit <- glm(label ~ SD + CORR + NDAI, family = binomial(link = 'logit'),data=train)
-    y_hat <- predict(fit, test, type = 'response')
-    error[i] <- loss(label.test, y_hat)
-  }
+y_hat <- predict(fit_randomForest, train_validation)
+mean(y_hat == train_validation$expert_label)
 ```
 
+```{r}
 
-
-
-
+```
 
 
 
