@@ -17,7 +17,7 @@ library(randomForest)
 library(MASS)
 # decision tree
 library(rpart)
-library(ROCR)
+library(ROSE)
 
 ```
 
@@ -411,18 +411,30 @@ mean(y_hat == testing$expert_label)
 ```{r}
 # Compute AUC for predicting Class with the model
 
+# logistic regression
+logistic_mod1 <- glm(expert_label ~ SD + CORR + NDAI,
+                       data = train.cv,
+                       family = "binomial")
+y_hat_logistic <- predict(logistic_mod1, newdata = testing)
+y_hat_logistic <- y_hat_logistic > 0.9
+y_hat_logistic[which(y_hat_logistic == FALSE)] <- 0
+y_hat_logistic[which(y_hat_logistic == TRUE)] <- 1
+roc.curve(testing$expert_label, y_hat_logistic)
+
+confusionMatrix(data = as.factor(y_hat_logistic), testing$expert_label)
+
+# qda
 qda_mod1 <- qda(expert_label ~ SD + CORR + NDAI, 
                      data = train_validation)
 
-y_hat <- predict(qda_mod1, testing)
-pred <- prediction(y_hat$class, testing$expert_label)
-perf <- performance(pred, measure = "tpr", x.measure = "fpr")
-plot(perf)
+roc.curve(testing$expert_label, predict(qda_mod1, testing)$class)
+
+# lda
+lda_mod1 <- lda(expert_label ~ SD + CORR + NDAI, 
+                     data = train_validation)
+roc.curve(testing$expert_label, predict(lda_mod1, testing)$class)
 
 
-auc <- performance(pred, measure = "auc")
-auc <- auc@y.values[[1]]
-auc
 ```
 
 
