@@ -14,6 +14,11 @@ library(scales)
 library(e1071)
 library(class)
 library(randomForest)
+library(MASS)
+# decision tree
+library(rpart)
+library(ROCR)
+
 ```
 
 1. Data Collection and Exploration
@@ -55,7 +60,6 @@ ggplot(data = image3) + geom_point(aes(x = x_coordinate, y = y_coordinate, color
 # pairs(image1_nozero[,c(4, 5, 6)])
 # pairs(image2_nozero[,c(4, 5, 6)])
 
-
 ggplot(data = image1_nozero) + geom_point(aes(x = CORR, y = rescale(image1_nozero$NDAI, to = c(-0.5, 1)), color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
 
 ggplot(data = image2_nozero) + geom_point(aes(x = CORR, y = NDAI, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red"))
@@ -76,8 +80,9 @@ ggplot(data = image1_nozero) + geom_histogram(aes(x = SD, color = expert_label, 
 ggplot(data = image1_nozero) + geom_histogram(aes(x = NDAI, color = expert_label, fill = expert_label, alpha = 0.5)) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red"))
 ```
 
-2. Preparation
+#2. Preparation
 
+#2 a)
 ```{r}
 # Method 1
 split_squares <- function(df) {
@@ -178,26 +183,34 @@ testM2 <- rbind(data1$test,
 
 ```
 
-b)
+```{r}
+#convert label from {-1,1} to {0,1}
+training$expert_label[which(training$expert_label == -1)] <- 0
+testing$expert_label[which(testing$expert_label == -1)] <- 0
+validation$expert_label[which(validation$expert_label == -1)] <- 0
+
+trainM2$expert_label[which(trainM2$expert_label == -1)] <- 0
+testM2$expert_label[which(testM2$expert_label == -1)] <- 0
+validationM2$expert_label[which(validationM2$expert_label == -1)] <- 0
+
+training$expert_label <- factor(training$expert_label)
+testing$expert_label <- factor(testing$expert_label)
+validation$expert_label <- factor(validation$expert_label)
+
+trainM2$expert_label <- factor(trainM2$expert_label)
+testM2$expert_label <- factor(testM2$expert_label)
+validationM2$expert_label <- factor(validationM2$expert_label)
+
+```
+
+# 2 (b) baseline accuracy
+
 The trivial classifier will have a high accuracy when the original image has mostly clear areas (without clouds).
 - Method 1 is preferred over Method 2.
 - The way method 1 is constructed ensures that in training, validation and test sets, there are equal amounts of data from each image. 
 - The table at the end of Method 2, however, suggests that the random selection tends to contain more data from one image than another.
 
 ```{r}
-training$expert_label[which(training$expert_label == -1)] <- 0
-testing$expert_label[which(testing$expert_label == -1)] <- 0
-validation$expert_label[which(validation$expert_label == -1)] <- 0
-trainM2$expert_label[which(trainM2$expert_label == -1)] <- 0
-testM2$expert_label[which(testM2$expert_label == -1)] <- 0
-validationM2$expert_label[which(validationM2$expert_label == -1)] <- 0
-training$expert_label <- factor(training$expert_label)
-testing$expert_label <- factor(testing$expert_label)
-validation$expert_label <- factor(validation$expert_label)
-trainM2$expert_label <- factor(trainM2$expert_label)
-testM2$expert_label <- factor(testM2$expert_label)
-validationM2$expert_label <- factor(validationM2$expert_label)
-
 baseline_preds <- 0
 # validation accuracy
 mean(baseline_preds == validation$expert_label)
@@ -211,6 +224,7 @@ mean(baseline_preds == testing$expert_label)
 colnames(image1_nozero)
 ```
 
+# 2 d) generic CV function
 
 ```{r}
 # d)
@@ -231,13 +245,16 @@ CVgeneric <- function(classifier, features, labels, K, loss) {
   }
 ```
 
-3. Modeling
+# 3. Modeling
+```{r}
+train_validation <- rbind(training, validation)
+train_validationM2 <- rbind(trainM2,validationM2)
+```
+
 ```{r}
 # Logistic Regression Model 
 
 # Split 1
-train_validation <- rbind(training, validation)
-
 CV <- function(data, K) {
     folds <- createFolds(1:nrow(data), k = K)
     accuracy <- rep(0, K)
@@ -260,7 +277,6 @@ CV <- function(data, K) {
 CV(train_validation, 5)
 
 # Split 2
-train_validationM2 <- rbind(trainM2,validationM2)
 CV(train_validationM2, 5)
 # qda, lda, svm, knn, random forest, neural network 
 ```
@@ -294,48 +310,15 @@ CV2(train_validationM2, K = 5)
 ```{r}
 # LDA
 # Split 1
-#todo
-
-# Split 2
-#todo
-```
-
-```{r}
-# KNN
-
-##TODO
-train_filtered <- train[,c(4,5,6)]
-test_filtered <- test[,c(4,5,6)]
-pred_error <- data.frame(index = 1:5, pred_error = rep(0, 5))
-for (i in c(5, 10, 20, 30, 50)) {
-  knn_pred <- knn(train_filtered, test_filtered, train$expert_label, k = i)
-  pred_error[i,2] <- mean(knn_pred == test$expert_label)
-}
-knn_pred <- knn(train_filtered, test_filtered, train$expert_label, k = 1)
-system.time(knn_pred <- knn(train_filtered, test_filtered, train$expert_label, k = 10))
-```
-
-```{r}
-# SVM
-
 # Split 1
-train_validation <- rbind(train, validation)
-svm_mod1 <- svm(expert_label ~ SD + CORR + NDAI, 
-                     data = train_validation,
-                kernel = "polynomial",
-                cost = 10)
-
-test_lda <- predict(lda_mod1, test)
-mean(test_lda$class == test$expert_label)
-
-CV4 <- function(data, K) {
+CV3 <- function(data, K) {
     folds <- createFolds(1:nrow(data), k = K)
     accuracy <- rep(0, K)
     for (i in 1: K) {
       test <- data[folds[[i]],]
       train.cv <- data[-folds[[i]],]
       
-      qda_mod1 <- qda(expert_label ~ SD + CORR + NDAI, 
+      qda_mod1 <- lda(expert_label ~ SD + CORR + NDAI, 
                      data = train.cv)
       y_hat = predict(qda_mod1, test)
       
@@ -343,7 +326,62 @@ CV4 <- function(data, K) {
     }
     return (mean(accuracy))
 }
-CV4(train_validation, K = 5)
+
+# Split 1
+CV3(train_validation, K = 5)
+
+# Split 2
+CV3(train_validationM2, K = 5)
+```
+
+```{r}
+# KNN
+
+CV4 <- function(data, K, k_num) {
+    folds <- createFolds(1:nrow(data), k = K)
+    accuracy <- rep(0, K)
+    for (i in 1: K) {
+      test <- data[folds[[i]],]
+      train.cv <- data[-folds[[i]],]
+      
+      train_filtered <- train.cv[,c(4,5,6)]
+      test_filtered <- test[,c(4,5,6)]
+      
+      y_hat <- knn(train_filtered, test_filtered, train.cv$expert_label, k = k_num)
+      accuracy[i] = mean(y_hat == test$expert_label)
+    }
+    return (mean(accuracy))
+}
+
+# Split 1
+system.time(CV4(train_validation, K = 5, k_num = 10))
+
+# Split 2
+system.time(CV4(train_validationM2, K = 5, k_num = 10))
+```
+
+```{r}
+# SVM
+# Split 1
+
+# SVM no need to run, too slow
+
+CV5 <- function(data, K) {
+    folds <- createFolds(1:nrow(data), k = K)
+    accuracy <- rep(0, K)
+    for (i in 1: K) {
+      test <- data[folds[[i]],]
+      train.cv <- data[-folds[[i]],]
+      
+      qda_mod1 <- svm(expert_label ~ SD + CORR + NDAI, 
+                     data = train.cv)
+      y_hat = predict(qda_mod1, test)
+      
+      accuracy[i] = mean(y_hat$class == test$expert_label)
+    }
+    return (mean(accuracy))
+}
+CV5(train_validation, K = 5)
 
 # https://rischanlab.github.io/SVM.html
 
@@ -353,17 +391,38 @@ CV4(train_validation, K = 5)
 
 
 ```{r}
+# RandomForest
 # Split 1
 system.time(fit_randomForest <- randomForest(expert_label ~ SD + CORR + NDAI, 
                    data = train_validation,
-                   ntree = 1))
+                   ntree = 3))
 
-y_hat <- predict(fit_randomForest, train_validation)
-mean(y_hat == train_validation$expert_label)
+y_hat <- predict(fit_randomForest, testing)
+mean(y_hat == testing$expert_label)
 ```
 
 ```{r}
+system.time(fit.decision <- rpart(expert_label ~ SD + CORR + NDAI, 
+                   data = train_validation))
+y_hat <- predict(fit_randomForest, testing)
+mean(y_hat == testing$expert_label)
+```
 
+```{r}
+# Compute AUC for predicting Class with the model
+
+qda_mod1 <- qda(expert_label ~ SD + CORR + NDAI, 
+                     data = train_validation)
+
+y_hat <- predict(qda_mod1, testing)
+pred <- prediction(y_hat$class, testing$expert_label)
+perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+plot(perf)
+
+
+auc <- performance(pred, measure = "auc")
+auc <- auc@y.values[[1]]
+auc
 ```
 
 
