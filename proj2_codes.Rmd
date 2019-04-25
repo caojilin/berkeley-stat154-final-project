@@ -17,8 +17,8 @@ library(randomForest)
 library(MASS)
 # decision tree
 library(rpart)
-library(ROSE)
-
+# library(ROSE)
+library(PRROC)
 ```
 
 1. Data Collection and Exploration
@@ -211,6 +211,11 @@ The trivial classifier will have a high accuracy when the original image has mos
 - The table at the end of Method 2, however, suggests that the random selection tends to contain more data from one image than another.
 
 ```{r}
+train_validation <- rbind(training, validation)
+train_validationM2 <- rbind(trainM2,validationM2)
+```
+
+```{r}
 baseline_preds <- 0
 # validation accuracy
 mean(baseline_preds == validation$expert_label)
@@ -277,10 +282,7 @@ CVgeneric <- function(classifier, features, labels, K, loss) {
 ```
 
 # 3. Modeling
-```{r}
-train_validation <- rbind(training, validation)
-train_validationM2 <- rbind(trainM2,validationM2)
-```
+
 
 ```{r}
 # Logistic Regression Model 
@@ -459,35 +461,57 @@ system.time(logistic_mod <- glm(expert_label ~ SD + CORR + NDAI,
                        data = train_validation,
                        family = "binomial"))
 y_hat_logistic <- predict(logistic_mod, newdata = testing, type="response")
-roc.curve(testing$expert_label, y_hat_logistic)
 
-y_hat_logistic <- y_hat_logistic > 0.5
-y_hat_logistic[which(y_hat_logistic == FALSE)] <- 0
-y_hat_logistic[which(y_hat_logistic == TRUE)] <- 1
-confusionMatrix(data = as.factor(y_hat_logistic), testing$expert_label)
+# https://stats.stackexchange.com/questions/10501/calculating-aupr-in-r
+fg1 <- y_hat_logistic[testing$expert_label == 1]
+bg1 <- y_hat_logistic[testing$expert_label == 0]
+
+roc1 = roc.curve(fg1, bg1, curve = T)
+pr1 = pr.curve(fg1, bg1, curve = T)
+
+# y_hat_logistic <- y_hat_logistic > 0.5
+# y_hat_logistic[which(y_hat_logistic == FALSE)] <- 0
+# y_hat_logistic[which(y_hat_logistic == TRUE)] <- 1
+# confusionMatrix(data = as.factor(y_hat_logistic), testing$expert_label)
 
 # qda
 qda_mod <- qda(expert_label ~ SD + CORR + NDAI, 
                      data = train_validation)
+y_hat_qda = predict(qda_mod, testing)$posterior[,1]
 
-roc.curve(testing$expert_label, predict(qda_mod, testing)$posterior[,1])
+fg2 <- y_hat_qda[testing$expert_label == 0]
+bg2 <- y_hat_qda[testing$expert_label == 1]
+
+roc2 = roc.curve(fg2, bg2, curve = T)
+pr2 = pr.curve(fg2, bg2, curve = T)
 
 # lda
 lda_mod <- lda(expert_label ~ SD + CORR + NDAI, 
                      data = train_validation)
-roc.curve(testing$expert_label, predict(lda_mod, testing)$posterior[,1])
+y_hat_lda = predict(lda_mod, testing)$posterior[,1]
+
+fg3 <- y_hat_lda[testing$expert_label == 0]
+bg3 <- y_hat_lda[testing$expert_label == 1]
+
+roc3 = roc.curve(fg3, bg3, curve = T)
+pr3 = pr.curve(fg3, bg3, curve = T)
 
 # knn
 
 train_filtered <- train_validation[,c(4,5,6)]
 test_filtered <- testing[,c(4,5,6)]
 
-y_hat = knn(train_filtered, test_filtered, train_validation$expert_label, k = 10,
+y_hat_knn = knn(train_filtered, test_filtered, train_validation$expert_label, k = 10,
                      prob = TRUE)
 
-prob <- attr(y_hat, "prob")
+y_hat_knn <- attr(y_hat_knn, "prob")
 
-roc.curve(testing$expert_label, prob)
+fg4 <- y_hat_knn[testing$expert_label == 0]
+bg4 <- y_hat_knn[testing$expert_label == 1]
+
+roc4 = roc.curve(fg4, bg4, curve = T)
+pr4 = pr.curve(fg4, bg4, curve = T)
+
 
 
 # random forests
@@ -495,8 +519,20 @@ system.time(fit_randomForest <- randomForest(expert_label ~ SD + CORR + NDAI,
                    data = train_validation, importance= T,
                    ntree = 3))
 
-y_hat <- predict(fit_randomForest, testing, type = "prob")
-roc.curve(testing$expert_label, y_hat[,1])
+y_hat_rf <- predict(fit_randomForest, testing, type = "prob")
+y_hat_rf = y_hat_rf[,1]
+
+fg5 <- y_hat_rf[testing$expert_label == 0]
+bg5 <- y_hat_rf[testing$expert_label == 1]
+
+roc5 = roc.curve(fg5, bg5, curve = T)
+pr5 = pr.curve(fg5, bg5, curve = T)
+
+```
+
+#3c
+```{r}
+
 ```
 
 
