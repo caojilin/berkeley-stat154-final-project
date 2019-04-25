@@ -430,7 +430,7 @@ CV6 <- function(data, K, ntree) {
 }
 
 # Split 1
-CV6(train_validation, K = 5, ntree=3)
+CV6(train_validation, K = 5, ntree = 32)
 
 # Split 2
 CV6(train_validationM2, K = 5, ntree=3)
@@ -553,9 +553,43 @@ for (i in 1:length(n_tree)) {
 ```
 
 
-b) extract misclassifcation data
+b) extract misclassification data
+```{r}
+# Chosen classifier: random forest: use ntree = 32 for now NEED TO CHANGE
+# split 1
+randomforest_mod <- randomForest(expert_label ~ SD + CORR + NDAI, 
+                   data = train_validation,
+                   ntree = 32)
+randomforest_y_hat <- predict(randomforest_mod, testing)
+misclassified1 <- testing[randomforest_y_hat != testing$expert_label,]
+plot(misclassified1$x_coordinate, misclassified1$y_coordinate)
+# more errors were made on the edges (when y coordinate value was low
+boxplot(misclassified1$NDAI, train_validation$NDAI, names = c("Misclassified", "Train_Validation"), 
+        horizontal = TRUE)
+boxplot(misclassified1$CORR, train_validation$CORR, names = c("Misclassified", "Train_Validation"),
+        horizontal = TRUE)
+boxplot(misclassified1$SD, train_validation$SD, names = c("Misclassified", "Train_Validation"),
+        horizontal = TRUE)
+plot(misclassified1$expert_label)
+# more errors were made by identifying an area to be clear when there is in fact cloud 
+
+# split 2
+randomforest_mod2 <- randomForest(expert_label ~ SD + CORR + NDAI, 
+                   data = train_validationM2,
+                   ntree = 32)
+randomforest_y_hat2 <- predict(randomforest_mod2, testing)
+misclassified2 <- testing[randomforest_y_hat2 != testing$expert_label,]
+plot(misclassified2$x_coordinate, misclassified2$y_coordinate)
+plot(misclassified2$expert_label)
+# more errors were made by identifying an area to be clear when there is in fact cloud 
+```
+
 https://www.analyticsvidhya.com/blog/2015/08/introduction-ensemble-learning/
 
+# 4 c)
+```{r}
+
+```
 
 
 
