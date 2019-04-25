@@ -209,9 +209,9 @@ mean(baseline_preds == testing$expert_label)
 
 ```{r}
 # c)
-image_pca <- prcomp(train_validation[,c(7:11)], center = TRUE, scale. = TRUE)
+# changed: training_validation --> image1_nozero
+image1_pca <- prcomp(image1_nozero[,c(7:11)], center = TRUE, scale. = TRUE)
 autoplot(image1_pca, data = image1_nozero, loadings = TRUE, loadings.label = TRUE)
-
 # Logistic 
 train_pca <- prcomp(training[,c(7:11)], center = TRUE, scale. = TRUE)
 PC1 <- train_pca$x[,1]
@@ -221,7 +221,6 @@ pca_train <- data.frame(expert_label = training$expert_label, PC1, PC2, PC3)
 pca_logistic <- glm(expert_label ~ PC1 + PC2 + PC3,
                     data = pca_train,
                     family = "binomial")
-
 testing_pca <- prcomp(testing[,c(7:11)], center = TRUE, scale. = TRUE)
 PC1 <- testing_pca$x[,1]
 PC2 <- testing_pca$x[,2]
@@ -232,8 +231,6 @@ y_hat_pca <- y_hat_pca > 0.5
 y_hat_pca[which(y_hat_pca == FALSE)] <- 0
 y_hat_pca[which(y_hat_pca == TRUE)] <- 1
 mean(y_hat_pca  == testing$expert_label)
-
-
 RA_mod <- glm(expert_label ~ RA_AN + RA_AF + RA_BF + RA_CF + RA_DF,
               data = train_validation,
               family = "binomial")
@@ -242,6 +239,8 @@ y_hat_RA <- y_hat_RA > 0.5
 y_hat_RA[which(y_hat_RA == FALSE)] <- 0
 y_hat_RA[which(y_hat_RA == TRUE)] <- 1
 mean(y_hat_RA == testing$expert_label)
+
+## PCA accuract only ~ 0.5?
 ```
 
 # 2 d) generic CV function
