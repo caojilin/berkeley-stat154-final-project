@@ -516,8 +516,15 @@ pr5 = pr.curve(fg5, bg5, curve = T)
 
 #3c
 ```{r}
+# use three decision trees to examine three images
 rpart.plot(rpart(expert_label ~ SD + CORR + NDAI, 
                    data = image1_nozero))
+
+rpart.plot(rpart(expert_label ~ SD + CORR + NDAI, 
+                   data = image2_nozero))
+
+rpart.plot(rpart(expert_label ~ SD + CORR + NDAI, 
+                   data = image3_nozero))
 ```
 
 
