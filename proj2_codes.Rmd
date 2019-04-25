@@ -14,6 +14,7 @@ library(scales)
 library(e1071)
 library(class)
 library(randomForest)
+library(ggfortify)
 library(MASS)
 # decision tree
 library(rpart)
@@ -38,16 +39,18 @@ colnames(image3) <- c('y_coordinate', 'x_coordinate', 'expert_label', 'NDAI', 'S
 
 image1_nozero <- image1[-which(image1$expert_label == 0),]
 image1_nozero$expert_label[which(image1_nozero$expert_label == -1)] <- 0
+image1_nozero$expert_label <- as.factor(image1_nozero$expert_label)
 image1_nozero$expert_label <- droplevels(image1_nozero$expert_label)
 rownames(image1_nozero) <- 1:nrow(image1_nozero)
-
 image2_nozero <- image2[-which(image2$expert_label == 0),]
 image2_nozero$expert_label[which(image2_nozero$expert_label == -1)] <- 0
+image2_nozero$expert_label <- as.factor(image2_nozero$expert_label)
 image2_nozero$expert_label <- droplevels(image2_nozero$expert_label)
 rownames(image2_nozero) <- 1:nrow(image2_nozero)
 
 image3_nozero <- image3[-which(image3$expert_label == 0),]
 image3_nozero$expert_label[which(image3_nozero$expert_label == -1)] <- 0
+image3_nozero$expert_label <- as.factor(image3_nozero$expert_label)
 image3_nozero$expert_label <- droplevels(image3_nozero$expert_label)
 rownames(image3_nozero) <- 1:nrow(image3_nozero)
 ```
@@ -273,7 +276,7 @@ CVgeneric <- function(classifier, features, labels, K, loss) {
 # Split 1
 CV <- function(data, K) {
     folds <- createFolds(1:nrow(data), k = K)
-    accuracy <- rep(0, K)
+    accuracy <- data.frame(Folds = c(1:K), Accuracy_Rate = rep(0, K))
     for (i in 1: K) {
       test <- data[folds[[i]],]
       train.cv <- data[-folds[[i]],]
@@ -285,9 +288,9 @@ CV <- function(data, K) {
       y_hat <- y_hat > 0.5
       y_hat[which(y_hat == FALSE)] <- 0
       y_hat[which(y_hat == TRUE)] <- 1
-      accuracy[i] = mean(y_hat  == test$expert_label)
+      accuracy[i,2] = mean(y_hat  == test$expert_label)
     }
-    return (mean(accuracy))
+    return (accuracy)
 }
 
 CV(train_validation, 5)
@@ -303,7 +306,7 @@ CV(train_validationM2, 5)
 # Split 1
 CV2 <- function(data, K) {
     folds <- createFolds(1:nrow(data), k = K)
-    accuracy <- rep(0, K)
+    accuracy <- data.frame(Folds = c(1:K), Accuracy_Rate = rep(0, K))
     for (i in 1: K) {
       test <- data[folds[[i]],]
       train.cv <- data[-folds[[i]],]
@@ -312,9 +315,9 @@ CV2 <- function(data, K) {
                      data = train.cv)
       y_hat = predict(qda_mod1, test)
       
-      accuracy[i] = mean(y_hat$class == test$expert_label)
+      accuracy[i,2] = mean(y_hat$class == test$expert_label)
     }
-    return (mean(accuracy))
+    return (accuracy)
 }
 CV2(train_validation, K = 5)
 
@@ -329,7 +332,7 @@ CV2(train_validationM2, K = 5)
 # Split 1
 CV3 <- function(data, K) {
     folds <- createFolds(1:nrow(data), k = K)
-    accuracy <- rep(0, K)
+    accuracy <- data.frame(Folds = c(1:K), Accuracy_Rate = rep(0, K))
     for (i in 1: K) {
       test <- data[folds[[i]],]
       train.cv <- data[-folds[[i]],]
@@ -338,9 +341,9 @@ CV3 <- function(data, K) {
                      data = train.cv)
       y_hat = predict(qda_mod1, test)
       
-      accuracy[i] = mean(y_hat$class == test$expert_label)
+      accuracy[i,2] = mean(y_hat$class == test$expert_label)
     }
-    return (mean(accuracy))
+    return (accuracy)
 }
 
 # Split 1
@@ -355,7 +358,7 @@ CV3(train_validationM2, K = 5)
 
 CV4 <- function(data, K, k_num) {
     folds <- createFolds(1:nrow(data), k = K)
-    accuracy <- rep(0, K)
+    accuracy <- data.frame(Folds = c(1:K), Accuracy_Rate = rep(0, K))
     for (i in 1: K) {
       test <- data[folds[[i]],]
       train.cv <- data[-folds[[i]],]
@@ -366,7 +369,7 @@ CV4 <- function(data, K, k_num) {
       y_hat <- knn(train_filtered, test_filtered, train.cv$expert_label, k = k_num)
       accuracy[i] = mean(y_hat == test$expert_label)
     }
-    return (mean(accuracy))
+    return (accuracy)
 }
 
 # Split 1
@@ -376,7 +379,7 @@ system.time(CV4(train_validation, K = 5, k_num = 10))
 system.time(CV4(train_validationM2, K = 5, k_num = 10))
 ```
 
-```{r}
+```{r eval = FALSE}
 # SVM
 # Split 1
 
@@ -411,7 +414,7 @@ CV5(train_validationM2, K = 5)
 # RandomForest
 CV6 <- function(data, K, ntree) {
     folds <- createFolds(1:nrow(data), k = K)
-    accuracy <- rep(0, K)
+    accuracy <- data.frame(Folds = c(1:K), Accuracy_Rate = rep(0, K))
     for (i in 1: K) {
       test <- data[folds[[i]],]
       train.cv <- data[-folds[[i]],]
@@ -423,7 +426,7 @@ CV6 <- function(data, K, ntree) {
       
       accuracy[i] = mean(y_hat == test$expert_label)
     }
-    return (mean(accuracy))
+    return (accuracy)
 }
 
 # Split 1
@@ -451,7 +454,8 @@ bg1 <- y_hat_logistic[testing$expert_label == 0]
 
 roc1 = roc.curve(fg1, bg1, curve = T)
 pr1 = pr.curve(fg1, bg1, curve = T)
-
+plot(roc1)
+plot(pr1)
 # y_hat_logistic <- y_hat_logistic > 0.5
 # y_hat_logistic[which(y_hat_logistic == FALSE)] <- 0
 # y_hat_logistic[which(y_hat_logistic == TRUE)] <- 1
@@ -526,9 +530,31 @@ rpart.plot(rpart(expert_label ~ SD + CORR + NDAI,
                    data = image3_nozero))
 ```
 
+4. Diagnostics
+
+a) 
+- Random forest: accuracy converge to a certain value as ntree goes infinitely high
+- Knn: same as above for k value
+
+```{r eval = FALSE}
+system.time(fit_randomForest <- randomForest(expert_label ~ SD + CORR + NDAI, 
+                   data = train_validation, importance= T,
+                   ntree = 50))
+
+mean_accuracy <- rep(0, 10)
+n_tree <- c(1, 3, 5, 10, 15, 20, 30, 40, 50, 80, 100)
+for (i in 1:length(n_tree)) {
+  fit_randomForest <- randomForest(expert_label ~ SD + CORR + NDAI, 
+                   data = train_validation, importance= T,
+                   ntree = n_tree[i])
+  y_hat_randomforest <- predict(fit_randomForest, testing)
+  mean_accuracy[i] = mean(y_hat == testing$expert_label)
+}
+```
 
 
-
+b) extract misclassifcation data
+https://www.analyticsvidhya.com/blog/2015/08/introduction-ensemble-learning/
 
 
 
