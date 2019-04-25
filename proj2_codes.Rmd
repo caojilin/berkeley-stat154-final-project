@@ -17,8 +17,8 @@ library(randomForest)
 library(MASS)
 # decision tree
 library(rpart)
-# library(ROSE)
 library(PRROC)
+library(rpart.plot)
 ```
 
 1. Data Collection and Exploration
@@ -29,22 +29,26 @@ The purpose of the study is to to propose
 # Load Image Data & Add Column Names
 image1 <- read.table("image_data/image1.txt")
 colnames(image1) <- c('y_coordinate', 'x_coordinate', 'expert_label', 'NDAI', 'SD', 'CORR', 'RA_DF', 'RA_CF', 'RA_BF', 'RA_AF', 'RA_AN')
-image1$expert_label <- as.factor(image1$expert_label)
 image2 <- read.table("image_data/image2.txt")
 colnames(image2) <- c('y_coordinate', 'x_coordinate', 'expert_label', 'NDAI', 'SD', 'CORR', 'RA_DF', 'RA_CF', 'RA_BF', 'RA_AF', 'RA_AN')
-image2$expert_label <- as.factor(image2$expert_label)
 image3 <- read.table("image_data/image3.txt")
 colnames(image3) <- c('y_coordinate', 'x_coordinate', 'expert_label', 'NDAI', 'SD', 'CORR', 'RA_DF', 'RA_CF', 'RA_BF', 'RA_AF', 'RA_AN')
-image3$expert_label <- as.factor(image3$expert_label)
 
-# Remove zero ('unlabeled') values 
+# Remove zero ('unlabeled') values and convert label from {-1,1} to {0,1}
+
 image1_nozero <- image1[-which(image1$expert_label == 0),]
+image1_nozero$expert_label[which(image1_nozero$expert_label == -1)] <- 0
+image1_nozero$expert_label <- droplevels(image1_nozero$expert_label)
 rownames(image1_nozero) <- 1:nrow(image1_nozero)
 
 image2_nozero <- image2[-which(image2$expert_label == 0),]
+image2_nozero$expert_label[which(image2_nozero$expert_label == -1)] <- 0
+image2_nozero$expert_label <- droplevels(image2_nozero$expert_label)
 rownames(image2_nozero) <- 1:nrow(image2_nozero)
 
 image3_nozero <- image3[-which(image3$expert_label == 0),]
+image3_nozero$expert_label[which(image3_nozero$expert_label == -1)] <- 0
+image3_nozero$expert_label <- droplevels(image3_nozero$expert_label)
 rownames(image3_nozero) <- 1:nrow(image3_nozero)
 ```
 
@@ -180,26 +184,6 @@ validationM2 <- rbind(data1$validation,
 testM2 <- rbind(data1$test,
                     data2$test,
                     data3$test)
-
-```
-
-```{r}
-#convert label from {-1,1} to {0,1}
-training$expert_label[which(training$expert_label == -1)] <- 0
-testing$expert_label[which(testing$expert_label == -1)] <- 0
-validation$expert_label[which(validation$expert_label == -1)] <- 0
-
-trainM2$expert_label[which(trainM2$expert_label == -1)] <- 0
-testM2$expert_label[which(testM2$expert_label == -1)] <- 0
-validationM2$expert_label[which(validationM2$expert_label == -1)] <- 0
-
-training$expert_label <- factor(training$expert_label)
-testing$expert_label <- factor(testing$expert_label)
-validation$expert_label <- factor(validation$expert_label)
-
-trainM2$expert_label <- factor(trainM2$expert_label)
-testM2$expert_label <- factor(testM2$expert_label)
-validationM2$expert_label <- factor(validationM2$expert_label)
 
 ```
 
@@ -532,7 +516,8 @@ pr5 = pr.curve(fg5, bg5, curve = T)
 
 #3c
 ```{r}
-
+rpart.plot(rpart(expert_label ~ SD + CORR + NDAI, 
+                   data = image1_nozero))
 ```
 
 
