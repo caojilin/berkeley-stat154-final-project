@@ -24,8 +24,6 @@ library(rpart.plot)
 
 1. Data Collection and Exploration
 
-The purpose of the study is to to propose 
-
 ```{r}
 # Load Image Data & Add Column Names
 image1 <- read.table("image_data/image1.txt")
@@ -56,35 +54,56 @@ rownames(image3_nozero) <- 1:nrow(image3_nozero)
 ```
 
 ```{r, eval=F}
-# 1 a) lot Well-Labeled Map
+# 1 b) Plot Well-Labeled Map
 ggplot(data = image1) + geom_point(aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white"))
 ggplot(data = image2) + geom_point(aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white"))
 ggplot(data = image3) + geom_point(aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white")) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white"))
 ```
 
 ```{r, eval=F}
-# Observe pair-wise relationships between variables ??? Plots different from in the paper
-# pairs(image1_nozero[,c(4, 5, 6)])
-# pairs(image2_nozero[,c(4, 5, 6)])
+# 1 c)
+# Observe pair-wise relationships between variables 
+pairs(image1_nozero[,c(7, 8, 9, 10, 11)])
+pairs(image1_nozero[,c(4, 5, 6, 7)])
+pairs(image1_nozero[,c(4, 5, 6)])
+pairs(image2_nozero[,c(4, 5, 6)])
+pairs(image3_nozero[,c(4, 5, 6)])
+image1_nozero
 
-ggplot(data = image1_nozero) + geom_point(aes(x = CORR, y = rescale(image1_nozero$NDAI, to = c(-0.5, 1)), color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
+# Relationship between CORR and NDAI color-coded with expert labels
+ggplot(data = image1_nozero) + geom_point(aes(x = CORR, y = NDAI, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
+ggplot(data = image2_nozero) + geom_point(aes(x = CORR, y = NDAI, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
+ggplot(data = image3_nozero) + geom_point(aes(x = CORR, y = NDAI, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
 
-ggplot(data = image2_nozero) + geom_point(aes(x = CORR, y = NDAI, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red"))
+# Relationship between SD and NDAI color-coded with expert labels
+ggplot(data = image1_nozero) + geom_point(aes(x = SD, y = NDAI, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
+ggplot(data = image2_nozero) + geom_point(aes(x = SD, y = NDAI, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
+ggplot(data = image3_nozero) + geom_point(aes(x = SD, y = NDAI, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
 
-ggplot(data = image2_nozero) + geom_histogram(aes(x = rescale(image2_nozero$NDAI, to = c(-0.5, 1))))
+# Relationship between CORR and SD color-coded with expert labels
+ggplot(data = image1_nozero) + geom_point(aes(x = SD, y = CORR, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
+ggplot(data = image2_nozero) + geom_point(aes(x = SD, y = CORR, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
+ggplot(data = image3_nozero) + geom_point(aes(x = SD, y = CORR, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
 
-```
+# Distribution of NDAI In Relation to Expert Label
+ggplot(data = image1_nozero) + geom_histogram(aes(x = image1_nozero$NDAI, fill = expert_label))
+ggplot(data = image2_nozero) + geom_histogram(aes(x = image2_nozero$NDAI, fill = expert_label))
+ggplot(data = image3_nozero) + geom_histogram(aes(x = image3_nozero$NDAI, fill = expert_label))
 
-```{r, eval=F}
-# Pairwise Relationships with Expert Label 
-ggplot(data = image1_nozero) + geom_boxplot(aes(y = CORR, color = expert_label))
-boxplot(image1_nozero$CORR)
+# Distribution of CORR In Relation to Expert Label
+ggplot(data = image1_nozero) + geom_histogram(aes(x = image1_nozero$CORR, fill = expert_label))
+ggplot(data = image2_nozero) + geom_histogram(aes(x = image2_nozero$CORR, fill = expert_label))
+ggplot(data = image3_nozero) + geom_histogram(aes(x = image3_nozero$CORR, fill = expert_label))
 
-ggplot(data = image1_nozero) + geom_histogram(aes(x = CORR, color = expert_label, fill = expert_label, alpha = 0.5))
+# Distribution of SD In Relation to Expert Label
+ggplot(data = image1_nozero) + geom_histogram(aes(x = image1_nozero$SD, fill = expert_label))
+ggplot(data = image2_nozero) + geom_histogram(aes(x = image2_nozero$SD, fill = expert_label))
+ggplot(data = image3_nozero) + geom_histogram(aes(x = image3_nozero$SD, fill = expert_label))
 
-ggplot(data = image1_nozero) + geom_histogram(aes(x = SD, color = expert_label, fill = expert_label, alpha = 0.5)) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red"))
-
-ggplot(data = image1_nozero) + geom_histogram(aes(x = NDAI, color = expert_label, fill = expert_label, alpha = 0.5)) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red"))
+# Distribution of RA_DF In Relation to Expert Label
+ggplot(data = image1_nozero) + geom_histogram(aes(x = image1_nozero$RA_DF, fill = expert_label))
+ggplot(data = image2_nozero) + geom_histogram(aes(x = image2_nozero$RA_DF, fill = expert_label))
+ggplot(data = image3_nozero) + geom_histogram(aes(x = image3_nozero$RA_DF, fill = expert_label))
 ```
 
 #2. Preparation
