@@ -33,24 +33,34 @@ colnames(image2) <- c('y_coordinate', 'x_coordinate', 'expert_label', 'NDAI', 'S
 image3 <- read.table("image_data/image3.txt")
 colnames(image3) <- c('y_coordinate', 'x_coordinate', 'expert_label', 'NDAI', 'SD', 'CORR', 'RA_DF', 'RA_CF', 'RA_BF', 'RA_AF', 'RA_AN')
 
-# Remove zero ('unlabeled') values and convert label from {-1,1} to {0,1}
+# Add a column identifying which image they are from (for later convenience when splitting and merging data)
+image1$image_origin <- 1
 
+image2$image_origin <- 2
+rownames(image2) = 115230:(115229+115110)
+image3$image_origin <- 3
+rownames(image3) = 230340:(230339+115217)
+
+
+# Remove zero ('unlabeled') values and convert label from {-1,1} to {0,1}
 image1_nozero <- image1[-which(image1$expert_label == 0),]
 image1_nozero$expert_label[which(image1_nozero$expert_label == -1)] <- 0
 image1_nozero$expert_label <- as.factor(image1_nozero$expert_label)
 image1_nozero$expert_label <- droplevels(image1_nozero$expert_label)
-rownames(image1_nozero) <- 1:nrow(image1_nozero)
+# rownames(image1_nozero) <- 1:nrow(image1_nozero)
 image2_nozero <- image2[-which(image2$expert_label == 0),]
 image2_nozero$expert_label[which(image2_nozero$expert_label == -1)] <- 0
 image2_nozero$expert_label <- as.factor(image2_nozero$expert_label)
 image2_nozero$expert_label <- droplevels(image2_nozero$expert_label)
-rownames(image2_nozero) <- 1:nrow(image2_nozero)
+#  rownames(image2_nozero) <- 1:nrow(image2_nozero)
 
 image3_nozero <- image3[-which(image3$expert_label == 0),]
 image3_nozero$expert_label[which(image3_nozero$expert_label == -1)] <- 0
 image3_nozero$expert_label <- as.factor(image3_nozero$expert_label)
 image3_nozero$expert_label <- droplevels(image3_nozero$expert_label)
-rownames(image3_nozero) <- 1:nrow(image3_nozero)
+# rownames(image3_nozero) <- 1:nrow(image3_nozero)
+
+
 ```
 
 ```{r, eval=F}
@@ -58,6 +68,7 @@ rownames(image3_nozero) <- 1:nrow(image3_nozero)
 ggplot(data = image1) + geom_point(aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white"))
 ggplot(data = image2) + geom_point(aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white"))
 ggplot(data = image3) + geom_point(aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white")) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white"))
+
 ```
 
 ```{r, eval=F}
@@ -68,7 +79,7 @@ pairs(image1_nozero[,c(4, 5, 6, 7)])
 pairs(image1_nozero[,c(4, 5, 6)])
 pairs(image2_nozero[,c(4, 5, 6)])
 pairs(image3_nozero[,c(4, 5, 6)])
-image1_nozero
+
 
 # Relationship between CORR and NDAI color-coded with expert labels
 ggplot(data = image1_nozero) + geom_point(aes(x = CORR, y = NDAI, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
@@ -84,6 +95,11 @@ ggplot(data = image3_nozero) + geom_point(aes(x = SD, y = NDAI, color = as.facto
 ggplot(data = image1_nozero) + geom_point(aes(x = SD, y = CORR, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
 ggplot(data = image2_nozero) + geom_point(aes(x = SD, y = CORR, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
 ggplot(data = image3_nozero) + geom_point(aes(x = SD, y = CORR, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
+
+# Relationship between CORR and AF, AN, BF Angles
+ggplot(data = image1_nozero) + geom_point(aes(x = RA_AF, y = CORR)) 
+ggplot(data = image1_nozero) + geom_point(aes(x = RA_AN, y = CORR)) 
+ggplot(data = image1_nozero) + geom_point(aes(x = RA_BF, y = CORR)) 
 
 # Distribution of NDAI In Relation to Expert Label
 ggplot(data = image1_nozero) + geom_histogram(aes(x = image1_nozero$NDAI, fill = expert_label))
@@ -104,6 +120,8 @@ ggplot(data = image3_nozero) + geom_histogram(aes(x = image3_nozero$SD, fill = e
 ggplot(data = image1_nozero) + geom_histogram(aes(x = image1_nozero$RA_DF, fill = expert_label))
 ggplot(data = image2_nozero) + geom_histogram(aes(x = image2_nozero$RA_DF, fill = expert_label))
 ggplot(data = image3_nozero) + geom_histogram(aes(x = image3_nozero$RA_DF, fill = expert_label))
+
+
 ```
 
 #2. Preparation
@@ -171,13 +189,14 @@ validation <- rbind(split_one(image1_nozero)$validation, split_one(image2_nozero
                   split_one(image3_nozero)$validation)
 testing <- rbind(split_one(image1_nozero)$test, split_one(image2_nozero)$test,
                   split_one(image3_nozero)$test)
+
 ```
 
 
 ```{r}
 # a) Data Split
 
-# Method 2: Split the data from each image individually and then combine 
+# Method 2: Split the data from each image individually and then combine # ??? Similar to first method?
 # Andrew Ng's Recommendation: Training: 60%, Validation: 20%, Testing: 20%
 
 split_set <- function(data, num) {
@@ -231,10 +250,12 @@ mean(baseline_preds == testing$expert_label)
 
 ```{r}
 # c)
-# changed: training_validation --> image1_nozero
+# Logistic 
+
+# PCA
 image1_pca <- prcomp(image1_nozero[,c(7:11)], center = TRUE, scale. = TRUE)
 autoplot(image1_pca, data = image1_nozero, loadings = TRUE, loadings.label = TRUE)
-# Logistic 
+
 train_pca <- prcomp(training[,c(7:11)], center = TRUE, scale. = TRUE)
 PC1 <- train_pca$x[,1]
 PC2 <- train_pca$x[,2]
@@ -243,16 +264,19 @@ pca_train <- data.frame(expert_label = training$expert_label, PC1, PC2, PC3)
 pca_logistic <- glm(expert_label ~ PC1 + PC2 + PC3,
                     data = pca_train,
                     family = "binomial")
-testing_pca <- prcomp(testing[,c(7:11)], center = TRUE, scale. = TRUE)
-PC1 <- testing_pca$x[,1]
-PC2 <- testing_pca$x[,2]
-PC3 <- testing_pca$x[,3]
-testing.pca <- data.frame(expert_label = testing$expert_label, PC1, PC2, PC3)
-y_hat_pca <- predict(pca_logistic, newdata = testing.pca, type = 'response')
+validation_pca <- prcomp(validation[,c(7:11)], center = TRUE, scale. = TRUE)
+PC1 <- validation_pca$x[,1]
+PC2 <- validation_pca$x[,2]
+PC3 <- validation_pca$x[,3]
+validation.pca <- data.frame(expert_label = validation$expert_label, PC1, PC2, PC3)
+y_hat_pca <- predict(pca_logistic, newdata = validation.pca, type = 'response')
 y_hat_pca <- y_hat_pca > 0.5
 y_hat_pca[which(y_hat_pca == FALSE)] <- 0
 y_hat_pca[which(y_hat_pca == TRUE)] <- 1
-mean(y_hat_pca  == testing$expert_label)
+mean(y_hat_pca  == validation$expert_label)
+var(y_hat_pca  == validation$expert_label)
+
+# RA Angles 
 RA_mod <- glm(expert_label ~ RA_AN + RA_AF + RA_BF + RA_CF + RA_DF,
               data = train_validation,
               family = "binomial")
@@ -261,8 +285,57 @@ y_hat_RA <- y_hat_RA > 0.5
 y_hat_RA[which(y_hat_RA == FALSE)] <- 0
 y_hat_RA[which(y_hat_RA == TRUE)] <- 1
 mean(y_hat_RA == testing$expert_label)
+var(y_hat_RA == testing$expert_label)
 
-## PCA accuract only ~ 0.5?
+
+# SD, CORR, NDAI 
+paper_mod <- glm(expert_label ~ SD + CORR + NDAI,
+              data = train_validation,
+              family = "binomial")
+y_hat_paper <- predict(paper_mod, newdata = testing, type = 'response')
+y_hat_paper <- y_hat_paper > 0.5
+y_hat_paper[which(y_hat_paper == FALSE)] <- 0
+y_hat_paper[which(y_hat_paper == TRUE)] <- 1
+mean(y_hat_paper == testing$expert_label)
+var(y_hat_paper == testing$expert_label)
+image1_nozero
+
+# xy coordinates
+location_mod <- glm(expert_label ~ x_coordinate + y_coordinate,
+              data = train_validation,
+              family = "binomial")
+y_hat_location <- predict(location_mod, newdata = testing, type = 'response')
+y_hat_location <- y_hat_location > 0.5
+y_hat_location[which(y_hat_location == FALSE)] <- 0
+y_hat_location[which(y_hat_location == TRUE)] <- 1
+mean(y_hat_location == testing$expert_label)
+var(y_hat_location == testing$expert_label)
+
+# randomly choose three features 
+highest_accuracy <- mean(y_hat_paper == testing$expert_label)
+lowest_variance <- var(y_hat_paper == testing$expert_label)
+i <- 0
+for (i in 1: 100) {
+  explanatory <- colnames(image1_nozero)[-c(1:3)]
+var_indices <- sample(1:length(explanatory), 3)
+formula <- paste('expert_label', ' ~ ', paste(explanatory[var_indices], collapse = ' + '))
+mod <- glm(formula, data = train_validation, family = "binomial")
+hat <- predict(mod, newdata = testing, type = 'response')
+hat <- hat > 0.5
+hat[which(hat == FALSE)] <- 0
+hat[which(hat == TRUE)] <- 1
+accuracy <- mean(hat == testing$expert_label)
+variance <- var(hat == testing$expert_label)
+i <- i + 1
+if (accuracy >= highest_accuracy & variance <= lowest_variance) {
+  break
+}
+}
+highest_accuracy
+accuracy
+lowest_variance
+variance
+mod
 ```
 
 # 2 d) generic CV function
@@ -503,7 +576,6 @@ roc3 = roc.curve(fg3, bg3, curve = T)
 pr3 = pr.curve(fg3, bg3, curve = T)
 
 # knn
-
 train_filtered <- train_validation[,c(4,5,6)]
 test_filtered <- testing[,c(4,5,6)]
 
@@ -578,10 +650,12 @@ b) extract misclassification data
 # split 1
 randomforest_mod <- randomForest(expert_label ~ SD + CORR + NDAI, 
                    data = train_validation,
-                   ntree = 32)
+                   ntree = 1)
 randomforest_y_hat <- predict(randomforest_mod, testing)
 misclassified1 <- testing[randomforest_y_hat != testing$expert_label,]
 plot(misclassified1$x_coordinate, misclassified1$y_coordinate)
+
+ggplot(data = misclassified1) + geom_point(aes(x = x_coordinate, y = y_coordinate, color = image_origin)) + scale_y_reverse()
 # more errors were made on the edges (when y coordinate value was low
 boxplot(misclassified1$NDAI, train_validation$NDAI, names = c("Misclassified", "Train_Validation"), 
         horizontal = TRUE)
@@ -601,7 +675,88 @@ misclassified2 <- testing[randomforest_y_hat2 != testing$expert_label,]
 plot(misclassified2$x_coordinate, misclassified2$y_coordinate)
 plot(misclassified2$expert_label)
 # more errors were made by identifying an area to be clear when there is in fact cloud 
+
+
+
+
+
 ```
+```{r}
+qda_mod <- knn(expert_label ~ SD + CORR + NDAI, 
+                   data = train_validation)
+qda_y_hat <- predict(qda_mod, testing)
+misclassified1 <- testing[qda_y_hat != testing$expert_label,]
+```
+
+```{r}
+# knn
+train_filtered <- train_validation[,c(4,5,6)]
+test_filtered <- testing[,c(4,5,6)]
+
+y_hat_knn <- knn(train_filtered, test_filtered, train_validation$expert_label, k = 10,
+                     prob = TRUE)
+misclassified1 <- testing[y_hat_knn != testing$expert_label,]
+```
+
+```{r}
+logistic_mod <- glm(expert_label ~ SD + CORR + NDAI,
+                       data = train_validation,
+                       family = "binomial")
+y_hat_logistic <- predict(logistic_mod, newdata = testing, type="response")
+
+misclassified1 <- testing[y_hat_logistic != testing$expert_label,]
+```
+
+
+```{r}
+
+# Image1 Misclassified Distribution
+image1_misclassified1 <- misclassified1[misclassified1$image_origin == 1,]
+df1 <- image1
+predicted_to_0_indices <- as.integer(rownames(image1_misclassified1[image1_misclassified1$expert_label == 1, ]))
+predicted_to_1_indices <- as.integer(rownames(image1_misclassified1[image1_misclassified1$expert_label == 0, ]))
+# 1 cloud , 0 no label, -1 clear, 2 predicted to -1, -2 predicted to 1,
+df1$expert_label[predicted_to_0_indices] <- 2
+df1$expert_label[predicted_to_1_indices] <- -2
+
+# Graph
+ggplot() + geom_point(data = df1, aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Misclassified to Cloudy", "Clear", "No Label", "Cloudy", "Misclassified to Clear"), values = c("red", "grey", "black", "white", "blue"))  + geom_point(data = df1[df1$expert_label == -2 | df1$expert_label == 2,], aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label)), size = 1)
+
+```
+
+```{r}
+# Image2 Misclassified Distribution
+image2_misclassified1 <- misclassified1[misclassified1$image_origin == 2,]
+df2 <- image2
+predicted_to_0_indices_2 <- as.integer(rownames(image2_misclassified1[image2_misclassified1$expert_label == 1, ]))
+predicted_to_1_indices_2 <- as.integer(rownames(image2_misclassified1[image2_misclassified1$expert_label == 0, ]))
+# 1 cloud , 0 no label, -1 clear, 2 predicted to -1, -2 predicted to 1,
+df2$expert_label[which(as.integer(rownames(df2)) %in% predicted_to_0_indices_2)] <- 2
+df2$expert_label[which(as.integer(rownames(df2)) %in% predicted_to_1_indices_2)] <- -2
+nrow(df2)
+range(predicted_to_0_indices)
+
+# Graph
+ggplot() + geom_point(data = df2, aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Misclassified to Cloudy", "Clear", "No Label", "Cloudy", "Misclassified to Clear"), values = c("red", "grey", "black", "white", "blue"))  + geom_point(data = df2[df2$expert_label == -2 | df2$expert_label == 2,], aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label)), size = 1)
+
+```
+
+```{r}
+# Image2 Misclassified Distribution
+image3_misclassified1 <- misclassified1[misclassified1$image_origin == 3,]
+df3 <- image3
+predicted_to_0_indices_3 <- as.integer(rownames(image3_misclassified1[image3_misclassified1$expert_label == 1, ]))
+predicted_to_1_indices_3 <- as.integer(rownames(image3_misclassified1[image3_misclassified1$expert_label == 0, ]))
+# 1 cloud , 0 no label, -1 clear, 2 predicted to -1, -2 predicted to 1,
+df3$expert_label[which(as.integer(rownames(df3)) %in% predicted_to_0_indices_3)] <- 2
+df3$expert_label[which(as.integer(rownames(df3)) %in% predicted_to_1_indices_3)] <- -2
+
+
+# Graph
+ggplot() + geom_point(data = df3, aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Misclassified to Cloudy", "Clear", "No Label", "Cloudy", "Misclassified to Clear"), values = c("red", "grey", "black", "white", "blue"))  + geom_point(data = df3[df3$expert_label == -2 | df3$expert_label == 2,], aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label)), size = 1)
+
+```
+
 
 https://www.analyticsvidhya.com/blog/2015/08/introduction-ensemble-learning/
 
