@@ -190,6 +190,8 @@ validation <- rbind(split_one(image1_nozero)$validation, split_one(image2_nozero
 testing <- rbind(split_one(image1_nozero)$test, split_one(image2_nozero)$test,
                   split_one(image3_nozero)$test)
 
+train_validation <- rbind(training, validation)
+train_validationM2 <- rbind(trainM2,validationM2)
 ```
 
 
@@ -226,7 +228,51 @@ testM2 <- rbind(data1$test,
                     data2$test,
                     data3$test)
 
+train_validation <- rbind(training, validation)
+train_validationM2 <- rbind(trainM2,validationM2)
 ```
+
+```{r}
+# Method 3: Naive Split
+
+test_image1 <- image1_nozero[1:floor(nrow(image1_nozero) * 0.2),]
+test_image2 <- image2_nozero[1:floor(nrow(image1_nozero) * 0.2),]
+test_image3 <- image3_nozero[1:floor(nrow(image1_nozero) * 0.2),]
+val_train_image1 <- image1_nozero[(floor(nrow(image1_nozero) * 0.2) + 1):nrow(image1_nozero), ]
+val_train_image2 <- image2_nozero[(floor(nrow(image2_nozero) * 0.2) + 1):nrow(image2_nozero), ]
+val_train_image3 <- image3_nozero[(floor(nrow(image3_nozero) * 0.2) + 1):nrow(image3_nozero), ]
+val_image1 <- image1_nozero[floor(nrow(val_train_image1) * 0.2), ]
+val_image2 <- image2_nozero[floor(nrow(val_train_image2) * 0.2), ]
+val_image3 <- image3_nozero[floor(nrow(val_train_image3) * 0.2), ]
+train_image1 <- image1_nozero[(floor(nrow(val_train_image1) * 0.2) + 1):nrow(val_train_image1), ]
+train_image2 <- image2_nozero[(floor(nrow(val_train_image2) * 0.2) + 1):nrow(val_train_image2), ]
+train_image3 <- image3_nozero[(floor(nrow(val_train_image3) * 0.2) + 1):nrow(val_train_image3), ]
+
+trainM2 <- rbind(train_image1, 
+               train_image2, train_image3)
+validationM2 <- rbind(val_image1,
+                    val_image2,
+                    val_image3)
+
+testM2 <- rbind(test_image1,
+                    test_image2,
+                    test_image3)
+
+train_validation <- rbind(training, validation)
+train_validationM2 <- rbind(trainM2,validationM2)
+```
+```{r}
+# Method 4: Even more naive split
+test_image1 <- image1_nozero[image1_nozero$y_coordinate <= 100,]
+test_image2 <- image2_nozero[image2_nozero$y_coordinate <= 100,]
+test_image3 <- image3_nozero[image3_nozero$y_coordinate <= 100,]
+val_train_image1 <- image1_nozero[image1_nozero$y_coordinate > 100,]
+val_train_image2 <- image2_nozero[image2_nozero$y_coordinate > 100,]
+val_train_image3 <- image3_nozero[image3_nozero$y_coordinate > 100,]
+train_validationM2 <- rbind(val_train_image1, val_train_image2, val_train_image3)
+testM2 <- rbind(test_image1, test_image2, test_image3)
+```
+
 
 # 2 (b) baseline accuracy
 
@@ -234,11 +280,6 @@ The trivial classifier will have a high accuracy when the original image has mos
 - Method 1 is preferred over Method 2.
 - The way method 1 is constructed ensures that in training, validation and test sets, there are equal amounts of data from each image. 
 - The table at the end of Method 2, however, suggests that the random selection tends to contain more data from one image than another.
-
-```{r}
-train_validation <- rbind(training, validation)
-train_validationM2 <- rbind(trainM2,validationM2)
-```
 
 ```{r}
 baseline_preds <- 0
@@ -255,7 +296,7 @@ mean(baseline_preds == testing$expert_label)
 # PCA
 image1_pca <- prcomp(image1_nozero[,c(7:11)], center = TRUE, scale. = TRUE)
 autoplot(image1_pca, data = image1_nozero, loadings = TRUE, loadings.label = TRUE)
-
+summary(image1_p)
 train_pca <- prcomp(training[,c(7:11)], center = TRUE, scale. = TRUE)
 PC1 <- train_pca$x[,1]
 PC2 <- train_pca$x[,2]
@@ -277,7 +318,7 @@ mean(y_hat_pca  == validation$expert_label)
 var(y_hat_pca  == validation$expert_label)
 
 # RA Angles 
-RA_mod <- glm(expert_label ~ RA_AN + RA_AF + RA_BF + RA_CF + RA_DF,
+RA_mod <- glm(expert_label ~ RA_AN + RA_AF + RA_BF,
               data = train_validation,
               family = "binomial")
 y_hat_RA <- predict(RA_mod, newdata = testing, type = 'response')
@@ -339,7 +380,7 @@ mod
 ```
 
 # 2 d) generic CV function
-
+fix --> four folds, four numbers
 ```{r}
 # d)
 CVgeneric <- function(classifier, features, labels, K, loss) {
@@ -385,10 +426,21 @@ CV <- function(data, K) {
     return (accuracy)
 }
 
-CV(train_validation, 5)
+CV(train_validation, 10)
 
 # Split 2
-CV(train_validationM2, 5)
+CV(train_validationM2, 10)
+
+
+#test
+mod_fit <- glm(expert_label ~ SD + CORR + NDAI,
+                       data = val_train_image1,
+                       family = "binomial")
+y_hat = predict(mod_fit, newdata=test_image1)
+      y_hat <- y_hat > 0.5
+      y_hat[which(y_hat == FALSE)] <- 0
+      y_hat[which(y_hat == TRUE)] <- 1
+      mean(y_hat  == test_image1$expert_label)
 # qda, lda, svm, knn, random forest, neural network 
 ```
 
@@ -626,6 +678,7 @@ rpart.plot(rpart(expert_label ~ SD + CORR + NDAI,
 a) 
 - Random forest: accuracy converge to a certain value as ntree goes infinitely high
 - Knn: same as above for k value
+- Logistic Regression: Beta
 
 ```{r eval = FALSE}
 system.time(fit_randomForest <- randomForest(expert_label ~ SD + CORR + NDAI, 
@@ -681,6 +734,9 @@ plot(misclassified2$expert_label)
 
 
 ```
+
+
+
 ```{r}
 qda_mod <- knn(expert_label ~ SD + CORR + NDAI, 
                    data = train_validation)
