@@ -65,7 +65,7 @@ image3_nozero$expert_label <- droplevels(image3_nozero$expert_label)
 
 ```{r, eval=F}
 # 1 b) Plot Well-Labeled Map
-ggplot(data = image1) + geom_point(aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white"))
+ggplot(data = image1) + geom_point(aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white")) + ggtitle('Image 1: ')
 ggplot(data = image2) + geom_point(aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white"))
 ggplot(data = image3) + geom_point(aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white")) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "No Label", "Cloud"), values = c("grey", "black", "white"))
 
@@ -128,7 +128,7 @@ ggplot(data = image3_nozero) + geom_histogram(aes(x = image3_nozero$RA_DF, fill 
 
 #2 a)
 ```{r}
-# Method 1
+# Non-Trivial Split Method 1: Split each image into four squares, extract 80% training, and 20% testing from each square
 split_squares <- function(df) {
   y_steps <- seq(range(df$y_coordinate)[1], 
                    range(df$y_coordinate)[2], length.out = 3)
@@ -191,86 +191,94 @@ testing <- rbind(split_one(image1_nozero)$test, split_one(image2_nozero)$test,
                   split_one(image3_nozero)$test)
 
 train_validation <- rbind(training, validation)
-train_validationM2 <- rbind(trainM2,validationM2)
 ```
 
-
 ```{r}
-# a) Data Split
+# Non-trivial Method 2: split each image into many smaller squares and randomly select some squares to be testing and others to be training 
+range(image1_nozero$y_coordinate)
+range(image1_nozero$x_coordinate)
+range(image2_nozero$y_coordinate)
+range(image2_nozero$x_coordinate)
+range(image3_nozero$y_coordinate)
+range(image3_nozero$x_coordinate)
 
-# Method 2: Split the data from each image individually and then combine # ??? Similar to first method?
-# Andrew Ng's Recommendation: Training: 60%, Validation: 20%, Testing: 20%
 
-split_set <- function(data, num) {
-    data$image <- rep(num, nrow(data))
-    all_indices <- 1:nrow(data)
-    test_index <- sample(all_indices, nrow(data) * 0.2)
-    remaining_index <- all_indices[-test_index]
-    training_index <- sample(remaining_index, length(remaining_index) * 0.8)
-    validation_index <- remaining_index[-training_index]
-    train <- data[training_index,]
-    validation <- data[validation_index,]
-    test <- data[test_index,]
-    return(list(train = train,validation = validation,test = test))
+split_squares <- function(df, n) {
+  list <- c()
+  x_square_coordinates <- seq(range(df$x_coordinate)[1], range(df$x_coordinate)[2], length.out = n + 1)
+  y_square_coordinates <- seq(range(df$y_coordinate)[1], range(df$y_coordinate)[2], length.out = n + 1)
+  index = 1
+  for (i in 1:n) {
+    for (j in 1:n) {
+      list[[index]] = df[df$y_coordinate <= y_square_coordinates[length(y_square_coordinates) - j + 1] 
+                     & df$y_coordinate >= y_square_coordinates[length(y_square_coordinates) - j] 
+                     & df$x_coordinate <= x_square_coordinates[i + 1] 
+                     & df$x_coordinate >= x_square_coordinates[i] , ]
+      index = index + 1
+    }
+  }
+  return (list)
 }
 
-data1 <- split_set(image1_nozero, 1)
-data2 <- split_set(image2_nozero, 2)
-data3 <- split_set(image3_nozero, 3)
-trainM2 <- rbind(data1$train, 
-               data2$train, data3$train)
+split_image1_64 <- split_squares(image1_nozero, 64)
+split_image2_64 <- split_squares(image2_nozero, 64)
+split_image3_64 <- split_squares(image3_nozero, 64)
 
-validationM2 <- rbind(data1$validation,
-                    data2$validation,
-                    data3$validation)
+split_three <- function(df, n) {
+  training <- data.frame()
+  testing <- data.frame()
+  validation <- data.frame()
+  test_indices <- sample(n * n, floor(n * n * 0.2))
+  train_validation_indices <- c(1: (n*n))[-test_indices]
+  validation_indices <- sample(train_validation_indices, floor(length(train_validation_indices) * 0.2))
+  train_indices <- train_validation_indices[-validation_indices]
+  for (i in 1:length(test_indices)) {
+    testing<- rbind(testing, df[[test_indices[i]]])
+    i <- i + 1
+  }
+  for (j in 1:length(train_indices)) {
+    training <- rbind(training, df[[train_indices[j]]])
+    j <- j + 1
+  }
+  for (h in 1:length(validation_indices)) {
+    validation <- rbind(validation, df[[validation_indices[h]]])
+  }
+  list <- list(test = testing, train = training, validation = validation)
+  return (list)
+} 
 
-testM2 <- rbind(data1$test,
-                    data2$test,
-                    data3$test)
 
-train_validation <- rbind(training, validation)
-train_validationM2 <- rbind(trainM2,validationM2)
+image1_all <- split_three(split_image1_64, 64)
+image2_all <- split_three(split_image2_64, 64)
+image3_all <- split_three(split_image3_64, 64)
+
+trainM2 <- rbind(image1_all$train, 
+               image2_all$train, image3_all$train)
+
+validationM2 <- rbind(image1_all$validation,
+                    image2_all$validation,
+                    image3_all$validation)
+
+testM2 <- rbind(image1_all$test,
+                    image2_all$test,
+                    image3_all$test)
+testM2 <- unique(testM2)
+
+train_validationM2 <- unique(rbind(trainM2,validationM2))
+
 ```
 
+
 ```{r}
-# Method 3: Naive Split
-
-test_image1 <- image1_nozero[1:floor(nrow(image1_nozero) * 0.2),]
-test_image2 <- image2_nozero[1:floor(nrow(image1_nozero) * 0.2),]
-test_image3 <- image3_nozero[1:floor(nrow(image1_nozero) * 0.2),]
-val_train_image1 <- image1_nozero[(floor(nrow(image1_nozero) * 0.2) + 1):nrow(image1_nozero), ]
-val_train_image2 <- image2_nozero[(floor(nrow(image2_nozero) * 0.2) + 1):nrow(image2_nozero), ]
-val_train_image3 <- image3_nozero[(floor(nrow(image3_nozero) * 0.2) + 1):nrow(image3_nozero), ]
-val_image1 <- image1_nozero[floor(nrow(val_train_image1) * 0.2), ]
-val_image2 <- image2_nozero[floor(nrow(val_train_image2) * 0.2), ]
-val_image3 <- image3_nozero[floor(nrow(val_train_image3) * 0.2), ]
-train_image1 <- image1_nozero[(floor(nrow(val_train_image1) * 0.2) + 1):nrow(val_train_image1), ]
-train_image2 <- image2_nozero[(floor(nrow(val_train_image2) * 0.2) + 1):nrow(val_train_image2), ]
-train_image3 <- image3_nozero[(floor(nrow(val_train_image3) * 0.2) + 1):nrow(val_train_image3), ]
-
-trainM2 <- rbind(train_image1, 
-               train_image2, train_image3)
-validationM2 <- rbind(val_image1,
-                    val_image2,
-                    val_image3)
-
-testM2 <- rbind(test_image1,
-                    test_image2,
-                    test_image3)
-
-train_validation <- rbind(training, validation)
-train_validationM2 <- rbind(trainM2,validationM2)
-```
-```{r}
-# Method 4: Even more naive split
+# Method 3: Even more naive split
 test_image1 <- image1_nozero[image1_nozero$y_coordinate <= 100,]
 test_image2 <- image2_nozero[image2_nozero$y_coordinate <= 100,]
 test_image3 <- image3_nozero[image3_nozero$y_coordinate <= 100,]
 val_train_image1 <- image1_nozero[image1_nozero$y_coordinate > 100,]
 val_train_image2 <- image2_nozero[image2_nozero$y_coordinate > 100,]
 val_train_image3 <- image3_nozero[image3_nozero$y_coordinate > 100,]
-train_validationM2 <- rbind(val_train_image1, val_train_image2, val_train_image3)
-testM2 <- rbind(test_image1, test_image2, test_image3)
+train_validationM3 <- rbind(val_train_image1, val_train_image2, val_train_image3)
+testM3 <- rbind(test_image1, test_image2, test_image3)
 ```
 
 
@@ -383,21 +391,25 @@ mod
 fix --> four folds, four numbers
 ```{r}
 # d)
-CVgeneric <- function(classifier, features, labels, K, loss) {
-    folds <- createFolds(labels, k = K)
-    error <- rep(0, K)
-    for (i in 1: K) {
-      test.feature <- features[folds[[i]],]
-      train.feature <- features[-folds[[i]],]
-      label.test <- labels[folds[[i]]]
-      label.train <- labels[-folds[[i]]]
-      
-      mod_fit <- train(train.feature, label.train, method=classifier)
-      y_hat = predict(mod_fit, newdata=test.feature)
-      error[i] = loss(y_hat, label.test)
+CVgeneric <- function(classifier, features, labels, K=5, loss_fn, n_tree=10, knn_k=10) {
+  folds <- createFolds(labels, k = K)
+  output <- data.frame(Folds = c(1:K), accuracy = rep(0, K), loss= rep(0, K))
+  loss <- rep(0, K)
+  accuracy = rep(0, K)
+  for (i in 1: K) {
+    test.feature <- features[folds[[i]],]
+    train.feature <- features[-folds[[i]],]
+    test.label <- labels[folds[[i]]]
+    train.label <- labels[-folds[[i]]]
+    
+    mod_fit = train(train.feature, train.label , method = classifier)
+    
+    y_hat = predict(mod_fit, newdata=test.feature)
+    loss[i] = loss_fn(y_hat, test.label)
+    accuracy[i] = mean(y_hat == test.label)
     }
-    return (mean(error))
-  }
+  return(output)
+}
 ```
 
 # 3. Modeling
@@ -820,6 +832,7 @@ https://www.analyticsvidhya.com/blog/2015/08/introduction-ensemble-learning/
 ```{r}
 
 ```
+
 
 
 
