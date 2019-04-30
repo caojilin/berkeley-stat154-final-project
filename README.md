@@ -3,9 +3,11 @@ The goal of cloud detection is to develop a classification model that effectivel
 
 ## Usage
 #### Clone the repositories
+All works are done in cloudDetection.Rmd and CVgeneric.R
+Every R chunk has a brief introduction
 ```bash
 $ git clone https://github.com/caojilin/cloud-detection
-$ cd cloud-detection/proj2_codes.Rmd
+$ cd cloud-detection/cloudDetection.Rmd
 ```
 #### Load Required Libraries / Packages
 ```R
@@ -50,15 +52,27 @@ ggplot(data = image1_nozero) + geom_histogram(aes(x = image1_nozero$CORR, fill =
 
 #### 2. Data Preprocessing
 a)
-* Split the entire dataset using two non-trivial methods
-    * Method 1: split each image into 16 squares, extract 80% training, and 20% testing from each square
-    * Method 2: split each image into many smaller squares and randomly select some squares to be testing and others to be training
+Split the entire dataset using two non-trivial methods
+Method 1: split each image into 16 squares, extract 80% training, and 20% testing from each square
+Method 2: split each image into many smaller squares and randomly select some squares to be testing and others to be training
 b) 
-*baseline accuracy
+a baseline classifier and its accuracy
 c) 
-*PCA features
+generating PCA features
 d)
-*generic CV function, see CVgeneric.R
+generic CV function, see CVgeneric.R
+**Input**: `classifier` is a string such as `'svm'`, `'logistic'`
+training features, training labels, number of folds K and a loss function(optional)
+**Output**: a dataframe containing accuracy and loss (if given a loss function) in each fold
 
-#### 2. Data Preprocessing
+#### 3. Modeling
+In this section, 
+* Logistic Regression, LDA, QDA, knn, svm, decision tree
+* ROC curves for each model
+* Precision Recall curves for each model
+
+#### 4. Diagnostics
+* A for loop for finding the optimal the number of trees in randomforest model. For each `i` in given `ntree`, train the randomforest model and evaluate the accuracy on validation dataset. 
+* A function for generating maps where the misclassification pixels are plotted in different color for further investigation ![](https://ibb.co/th4T3L8)
+
 
