@@ -61,6 +61,7 @@ image3_nozero$expert_label <- as.factor(image3_nozero$expert_label)
 image3_nozero$expert_label <- droplevels(image3_nozero$expert_label)
 # rownames(image3_nozero) <- 1:nrow(image3_nozero)
 
+images_all <- rbind(image1_nozero, image2_nozero, image3_nozero)
 
 ```
 
@@ -74,12 +75,18 @@ ggplot(data = image3) + geom_point(aes(x = x_coordinate, y = y_coordinate, color
 ```{r, eval=F}
 # 1 c)
 # Observe pair-wise relationships between variables 
-pairs(image1_nozero[,c(7, 8, 9, 10, 11)])
-corrplot(image1_nozero[,c(7, 8, 9, 10, 11)])
+pairs(images_all[,c(7, 8, 9, 10, 11)])
+
+corrplot(cor(images_all[,c(7, 8, 9, 10, 11)]), 
+         method = 'number', 
+         type = 'lower',
+         tl.srt = 45,
+         title = "Correlation For Radiance Angles")
 pairs(image1_nozero[,c(4, 5, 6, 7)])
 pairs(image1_nozero[,c(4, 5, 6)], main = "Pairwise Plot for NDAI, SD, CORR in Image 1")
 pairs(image2_nozero[,c(4, 5, 6)])
 pairs(image3_nozero[,c(4, 5, 6)])
+pairs(images_all[,c(4,5,6)], main = "Pairwise Plot for NDAI, SD, CORR")
 
 
 # Relationship between CORR and NDAI color-coded with expert labels
@@ -98,30 +105,31 @@ ggplot(data = image2_nozero) + geom_point(aes(x = SD, y = CORR, color = as.facto
 ggplot(data = image3_nozero) + geom_point(aes(x = SD, y = CORR, color = as.factor(expert_label))) + scale_color_manual("Expert Labels", labels = c("Not Cloud", "Cloud"), values = c("blue", "red")) + coord_flip()
 
 # Relationship between CORR and AF, AN, BF Angles
-ggplot(data = image1_nozero) + geom_point(aes(x = RA_AF, y = CORR)) 
-ggplot(data = image1_nozero) + geom_point(aes(x = RA_AN, y = CORR)) 
-ggplot(data = image1_nozero) + geom_point(aes(x = RA_BF, y = CORR)) 
+ggplot(data = images_all) + geom_point(aes(x = RA_AF, y = CORR)) + ggtitle ('CORR Plotted Against Radiance Angle AF')
+ggplot(data = images_all) + geom_point(aes(x = RA_AN, y = CORR)) + ggtitle ('CORR Plotted Against Radiance Angle AN')
+ggplot(data = images_all) + geom_point(aes(x = RA_BF, y = CORR)) + ggtitle ('CORR Plotted Against Radiance Angle BF')
 
 # Distribution of NDAI In Relation to Expert Label
 ggplot(data = image1_nozero) + geom_histogram(aes(x = image1_nozero$NDAI, fill = expert_label))
 ggplot(data = image2_nozero) + geom_histogram(aes(x = image2_nozero$NDAI, fill = expert_label))
 ggplot(data = image3_nozero) + geom_histogram(aes(x = image3_nozero$NDAI, fill = expert_label))
+ggplot(data = images_all) + geom_histogram(aes(x = images_all$NDAI, fill = expert_label)) + ggtitle('Distribution of NDAI')
 
 # Distribution of CORR In Relation to Expert Label
 ggplot(data = image1_nozero) + geom_histogram(aes(x = image1_nozero$CORR, fill = expert_label))
 ggplot(data = image2_nozero) + geom_histogram(aes(x = image2_nozero$CORR, fill = expert_label))
 ggplot(data = image3_nozero) + geom_histogram(aes(x = image3_nozero$CORR, fill = expert_label))
-
+ggplot(data = images_all) + geom_histogram(aes(x = images_all$CORR, fill = expert_label)) + ggtitle('Distribution of NDAI')
 # Distribution of SD In Relation to Expert Label
 ggplot(data = image1_nozero) + geom_histogram(aes(x = image1_nozero$SD, fill = expert_label))
 ggplot(data = image2_nozero) + geom_histogram(aes(x = image2_nozero$SD, fill = expert_label))
 ggplot(data = image3_nozero) + geom_histogram(aes(x = image3_nozero$SD, fill = expert_label))
-
+ggplot(data = images_all) + geom_histogram(aes(x = images_all$SD, fill = expert_label)) + ggtitle('Distribution of NDAI')
 # Distribution of RA_DF In Relation to Expert Label
 ggplot(data = image1_nozero) + geom_histogram(aes(x = image1_nozero$RA_DF, fill = expert_label))
 ggplot(data = image2_nozero) + geom_histogram(aes(x = image2_nozero$RA_DF, fill = expert_label))
 ggplot(data = image3_nozero) + geom_histogram(aes(x = image3_nozero$RA_DF, fill = expert_label))
-
+ggplot(data = images_all) + geom_histogram(aes(x = images_all$DF, fill = expert_label)) + ggtitle('Distribution of NDAI')
 
 ```
 
@@ -383,15 +391,16 @@ CVgeneric <- function(classifier, features, labels, K=5, loss_fn=NULL,
        y_hat = y_hat > 0.5
        y_hat[which(y_hat == FALSE)] <- 0
        y_hat[which(y_hat == TRUE)] <- 1
+       
     }else if (classifier == "qda") {
         mod_fit <- qda(model_input, data = train.cv)
-        y_hat = predict(mod_fit, test.cv)
+        y_hat = predict(mod_fit, test.cv)$class
     }else if (classifier == "lda") {
-      mod_fit <- lda(model_input, data = train.cv)
-      y_hat = predict(mod_fit, test.cv)
+        mod_fit <- lda(model_input, data = train.cv)
+        y_hat = predict(mod_fit, test.cv)$class
     }else{
-      mod_fit <- train(model_input, data = train.cv, method=classifier)
-      y_hat = predict(mod_fit, test.cv)
+        mod_fit <- train(model_input, data = train.cv, method=classifier)
+        y_hat = predict(mod_fit, test.cv)
     } 
     # output[i,3] = loss_fn(y_hat, train.label)
     output[i,2] = mean(y_hat == test.label)
@@ -405,83 +414,39 @@ CVgeneric <- function(classifier, features, labels, K=5, loss_fn=NULL,
 
 ```{r}
 # Logistic Regression Model 
-model_input = "expert_label ~ SD + CORR + NDAI"
+model_input = formula("expert_label ~ SD + CORR + NDAI")
+train.feature.m1 = train_validation[,c(4,5,6)]
+train.label.m1 = data.frame(expert_label = train_validation[,3])
+
+train.feature.m2 = train_validationM2[,c(4,5,6)]
+train.label.m2 = data.frame(expert_label = train_validationM2[,3])
 # Split 1
-train.feature = train_validation[,c(4,5,6)]
-train.label = data.frame(expert_label = train_validation[,3])
-
-CVgeneric("logistic", train.feature, train.label, K=10, model_input=model_input)
-
-# Split 1
-
+output1_logistic = CVgeneric("logistic", train.feature.m1, train.label.m1, K=5, model_input=model_input)
 
 # Split 2
-CV(train_validationM2, 10)
+output2_logistic = CVgeneric("logistic", train.feature.m2, train.label.m2, K=5, model_input=model_input)
 
 
-#test
-mod_fit <- glm(expert_label ~ SD + CORR + NDAI,
-                       data = val_train_image1,
-                       family = "binomial")
-y_hat = predict(mod_fit, newdata=test_image1)
-      y_hat <- y_hat > 0.5
-      y_hat[which(y_hat == FALSE)] <- 0
-      y_hat[which(y_hat == TRUE)] <- 1
-      mean(y_hat  == test_image1$expert_label)
-# qda, lda, svm, knn, random forest, neural network 
 ```
 
 ```{r}
 # QDA
 
 # Split 1
-CV2 <- function(data, K) {
-    folds <- createFolds(1:nrow(data), k = K)
-    accuracy <- data.frame(Folds = c(1:K), Accuracy_Rate = rep(0, K))
-    for (i in 1: K) {
-      test <- data[folds[[i]],]
-      train.cv <- data[-folds[[i]],]
-      
-      qda_mod1 <- qda(expert_label ~ SD + CORR + NDAI, 
-                     data = train.cv)
-      y_hat = predict(qda_mod1, test)
-      
-      accuracy[i,2] = mean(y_hat$class == test$expert_label)
-    }
-    return (accuracy)
-}
-CV2(train_validation, K = 5)
+output1_qda = CVgeneric("qda", train.feature.m1, train.label.m1, K=5, model_input=model_input)
 
 # Split 2
-CV2(train_validationM2, K = 5)
+output2_qda = CVgeneric("qda", train.feature.m2, train.label.m2, K=5, model_input=model_input)
 
 ```
 
 ```{r}
 # LDA
 # Split 1
-# Split 1
-CV3 <- function(data, K) {
-    folds <- createFolds(1:nrow(data), k = K)
-    accuracy <- data.frame(Folds = c(1:K), Accuracy_Rate = rep(0, K))
-    for (i in 1: K) {
-      test <- data[folds[[i]],]
-      train.cv <- data[-folds[[i]],]
-      
-      qda_mod1 <- lda(expert_label ~ SD + CORR + NDAI, 
-                     data = train.cv)
-      y_hat = predict(qda_mod1, test)
-      
-      accuracy[i,2] = mean(y_hat$class == test$expert_label)
-    }
-    return (accuracy)
-}
-
-# Split 1
-CV3(train_validation, K = 5)
+output1_lda = CVgeneric("lda", train.feature.m1, train.label.m1, K=5, model_input=model_input)
 
 # Split 2
-CV3(train_validationM2, K = 5)
+output2_lda = CVgeneric("lda", train.feature.m2, train.label.m2, K=5, model_input=model_input)
 ```
 
 ```{r}
@@ -489,7 +454,7 @@ CV3(train_validationM2, K = 5)
 
 CV4 <- function(data, K, k_num) {
     folds <- createFolds(1:nrow(data), k = K)
-    accuracy <- data.frame(Folds = c(1:K), Accuracy_Rate = rep(0, K))
+    output <- data.frame(Folds = c(1:K), accuracy = rep(0, K), loss= rep(0, K))
     for (i in 1: K) {
       test <- data[folds[[i]],]
       train.cv <- data[-folds[[i]],]
@@ -498,9 +463,9 @@ CV4 <- function(data, K, k_num) {
       test_filtered <- test[,c(4,5,6)]
       
       y_hat <- knn(train_filtered, test_filtered, train.cv$expert_label, k = k_num)
-      accuracy[i] = mean(y_hat == test$expert_label)
+      output[i,2] = mean(y_hat == test$expert_label)
     }
-    return (accuracy)
+    return (output)
 }
 
 # Split 1
@@ -513,39 +478,18 @@ system.time(CV4(train_validationM2, K = 5, k_num = 10))
 ```{r eval = FALSE}
 # SVM
 # Split 1
-
-# SVM no need to run, too slow
-
-CV5 <- function(data, K) {
-    folds <- createFolds(1:nrow(data), k = K)
-    accuracy <- rep(0, K)
-    for (i in 1: K) {
-      test <- data[folds[[i]],]
-      train.cv <- data[-folds[[i]],]
-      
-      qda_mod1 <- svm(expert_label ~ SD + CORR + NDAI, 
-                     data = train.cv)
-      y_hat = predict(qda_mod1, test)
-      
-      accuracy[i] = mean(y_hat$class == test$expert_label)
-    }
-    return (mean(accuracy))
-}
-CV5(train_validation, K = 5)
-
-# https://rischanlab.github.io/SVM.html
+output1 = CVgeneric("svm", train.feature.m1, train.label.m1, K=5, model_input=model_input)
 
 # Split 2
-CV5(train_validationM2, K = 5)
+output2 = CVgeneric("svm", train.feature.m2, train.label.m2, K=5, model_input=model_input)
 
 ```
 
 
 ```{r}
-# RandomForest
 CV6 <- function(data, K, ntree) {
     folds <- createFolds(1:nrow(data), k = K)
-    accuracy <- data.frame(Folds = c(1:K), Accuracy_Rate = rep(0, K))
+    output <- data.frame(Folds = c(1:K), accuracy = rep(0, K), loss= rep(0, K))
     for (i in 1: K) {
       test <- data[folds[[i]],]
       train.cv <- data[-folds[[i]],]
@@ -555,9 +499,9 @@ CV6 <- function(data, K, ntree) {
                    ntree = ntree)
       y_hat = predict(fit_randomForest, test)
       
-      accuracy[i] = mean(y_hat == test$expert_label)
+      output[i,2] = mean(y_hat == test$expert_label)
     }
-    return (accuracy)
+    return (output)
 }
 
 # Split 1
@@ -565,7 +509,6 @@ CV6(train_validation, K = 5, ntree = 32)
 
 # Split 2
 CV6(train_validationM2, K = 5, ntree=3)
-
 ```
 
 
