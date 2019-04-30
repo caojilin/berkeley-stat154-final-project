@@ -251,7 +251,7 @@ train_validation <- unique(rbind(trainM2,validationM2))
 ```
 
 
-```{r}
+```{r, eval = FALSE}
 # Method 3: Even more naive split
 test_image1 <- image1_nozero[image1_nozero$y_coordinate <= 100,]
 test_image2 <- image2_nozero[image2_nozero$y_coordinate <= 100,]
@@ -274,12 +274,14 @@ The trivial classifier will have a high accuracy when the original image has mos
 ```{r}
 baseline_preds <- 0
 # validation accuracy
-mean(baseline_preds == validation$expert_label)
+val_accuracy <- mean(baseline_preds == validation$expert_label)
 # test accuracy
-mean(baseline_preds == testing$expert_label)
+test_accuracy <-  mean(baseline_preds == testing$expert_label)
+
+data.frame('Validation_Accuracy' = val_accuracy, 'Test_Accuracy' = test_accuracy)
 ```
 
-```{r}
+```{r, eval = False}
 # c)
 # Logistic 
 
@@ -430,7 +432,7 @@ output1_logistic = CVgeneric("logistic", train.feature.m1, train.label.m1, K=5, 
 # Split 2
 output2_logistic = CVgeneric("logistic", train.feature.m2, train.label.m2, K=5, model_input=model_input)
 
-
+write.csv(output1_logistic, 'output1_logistic.csv')
 ```
 
 ```{r}
@@ -442,6 +444,8 @@ output1_qda = CVgeneric("qda", train.feature.m1, train.label.m1, K=5, model_inpu
 # Split 2
 output2_qda = CVgeneric("qda", train.feature.m2, train.label.m2, K=5, model_input=model_input)
 
+output1_qda
+output2_qda
 ```
 
 ```{r}
@@ -451,6 +455,9 @@ output1_lda = CVgeneric("lda", train.feature.m1, train.label.m1, K=5, model_inpu
 
 # Split 2
 output2_lda = CVgeneric("lda", train.feature.m2, train.label.m2, K=5, model_input=model_input)
+
+output1_lda
+output2_lda
 ```
 
 ```{r}
@@ -473,10 +480,10 @@ CV4 <- function(data, K, k_num) {
 }
 
 # Split 1
-system.time(CV4(train_validation, K = 5, k_num = 10))
+CV4(train_validation, K = 5, k_num = 10)
 
 # Split 2
-system.time(CV4(train_validationM2, K = 5, k_num = 10))
+CV4(train_validationM2, K = 5, k_num = 10)
 ```
 
 ```{r eval = FALSE}
@@ -517,7 +524,7 @@ CV6(train_validationM2, K = 5, ntree=3)
 
 
 #3 b)
-```{r}
+```{r, eval = FALSE}
 # Compute AUC for predicting Class with the model
 
 # logistic regression
@@ -532,7 +539,8 @@ bg1 <- y_hat_logistic[testing$expert_label == 0]
 
 roc1 = roc.curve(fg1, bg1, curve = T)
 pr1 = pr.curve(fg1, bg1, curve = T)
-
+plot(roc1)
+plot(pr1)
 # y_hat_logistic <- y_hat_logistic > 0.5
 # y_hat_logistic[which(y_hat_logistic == FALSE)] <- 0
 # y_hat_logistic[which(y_hat_logistic == TRUE)] <- 1
@@ -591,21 +599,27 @@ bg5 <- y_hat_rf[testing$expert_label == 1]
 roc5 = roc.curve(fg5, bg5, curve = T)
 pr5 = pr.curve(fg5, bg5, curve = T)
 
-plot(roc1, main = "logistic model Roc curve")
-plot(pr1, main = "logistic model PR curve")
+```
+
+```{r, eval = False}
+par(mfrow=c(1,3))
+plot(women)
+plot(mtcars$mpg, mtcars$cyl)
+plot(roc1, main = "Logistic model Roc curve")
+plot(pr1, main = "Logistic model PR curve")
 plot(roc2, main = "LDA model Roc curve")
 plot(pr2, main = "LDA model PR curve")
 plot(roc3, main = "QDA model Roc curve")
 plot(pr3, main = "QDA model PR curve")
 plot(roc4, main = "knn model Roc curve")
 plot(pr4, main = "knn model PR curve")
-plot(roc5, main = "decision tree model Roc curve")
-plot(pr5, main = "decision tree PR curve")
-
+plot(roc5, main = "Decision Tree model Roc curve")
+plot(pr5, main = "Decision Tree PR curve")
 ```
 
+
 #3c
-```{r}
+```{r, eval = False}
 # use three decision trees to examine three images
 rpart.plot(rpart(expert_label ~ SD + CORR + NDAI, 
                    data = image1_nozero))
@@ -647,7 +661,7 @@ plot(y = mean_accuracy[1:30], x = n_tree[1:30], type="l",
 
 
 b) extract misclassification data
-```{r}
+```{r, eval = False}
 # Chosen classifier: random forest: use ntree = 32 for now NEED TO CHANGE
 # split 1
 randomforest_mod <- randomForest(expert_label ~ SD + CORR + NDAI, 
@@ -686,14 +700,14 @@ plot(misclassified2$expert_label)
 
 
 
-```{r}
+```{r, eval = False}
 qda_mod <- knn(expert_label ~ SD + CORR + NDAI, 
                    data = train_validation)
 qda_y_hat <- predict(qda_mod, testing)
 misclassified1 <- testing[qda_y_hat != testing$expert_label,]
 ```
 
-```{r}
+```{r, eval = False}
 # knn
 train_filtered <- train_validation[,c(4,5,6)]
 test_filtered <- testing[,c(4,5,6)]
@@ -703,7 +717,7 @@ y_hat_knn <- knn(train_filtered, test_filtered, train_validation$expert_label, k
 misclassified1 <- testing[y_hat_knn != testing$expert_label,]
 ```
 
-```{r}
+```{r, eval = False}
 randomforest_mod2 <- randomForest(expert_label ~ SD + CORR + NDAI, 
                    data = train_validation,
                    ntree = 1)
@@ -711,7 +725,7 @@ randomforest_y_hat2 <- predict(randomforest_mod2, testing)
 misclassified1 <- testing[randomforest_y_hat2 != testing$expert_label,]
 ```
 
-```{r}
+```{r, eval = False}
 logistic_mod <- glm(expert_label ~ SD + CORR + NDAI,
                        data = train_validation,
                        family = "binomial")
@@ -721,7 +735,7 @@ misclassified1 <- testing[y_hat_logistic != testing$expert_label,]
 ```
 
 
-```{r}
+```{r, eval = False}
 
 # Image1 Misclassified Distribution
 image1_misclassified1 <- misclassified1[misclassified1$image_origin == 1,]
@@ -729,15 +743,15 @@ df1 <- image1
 predicted_to_0_indices <- as.integer(rownames(image1_misclassified1[image1_misclassified1$expert_label == 1, ]))
 predicted_to_1_indices <- as.integer(rownames(image1_misclassified1[image1_misclassified1$expert_label == 0, ]))
 # 1 cloud , 0 no label, -1 clear, 2 predicted to -1, -2 predicted to 1,
-df2$expert_label[which(as.integer(rownames(df2)) %in% predicted_to_0_indices_2)] <- 2
-df2$expert_label[which(as.integer(rownames(df2)) %in% predicted_to_1_indices_2)] <- -2
+df1$expert_label[predicted_to_0_indices] <- 2
+df1$expert_label[predicted_to_1_indices] <- -2
 
 # Graph
 ggplot() + geom_point(data = df1, aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Misclassified to Cloudy", "Clear", "No Label", "Cloudy", "Misclassified to Clear"), values = c("red", "grey", "black", "white", "blue"))  + geom_point(data = df1[df1$expert_label == -2 | df1$expert_label == 2,], aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label)), size = 1)
 
 ```
 
-```{r}
+```{r, eval = False}
 # Image2 Misclassified Distribution
 image2_misclassified1 <- misclassified1[misclassified1$image_origin == 2,]
 df2 <- image2
@@ -754,7 +768,7 @@ ggplot() + geom_point(data = df2, aes(x = x_coordinate, y = y_coordinate, color 
 
 ```
 
-```{r}
+```{r, eval = False}
 # Image2 Misclassified Distribution
 image3_misclassified1 <- misclassified1[misclassified1$image_origin == 3,]
 df3 <- image3
@@ -767,14 +781,6 @@ df3$expert_label[which(as.integer(rownames(df3)) %in% predicted_to_1_indices_3)]
 
 # Graph
 ggplot() + geom_point(data = df3, aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Misclassified to Cloudy", "Clear", "No Label", "Cloudy", "Misclassified to Clear"), values = c("red", "grey", "black", "white", "blue"))  + geom_point(data = df3[df3$expert_label == -2 | df3$expert_label == 2,], aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label)), size = 1)
-
-```
-
-
-https://www.analyticsvidhya.com/blog/2015/08/introduction-ensemble-learning/
-
-# 4 c)
-```{r}
 
 ```
 
