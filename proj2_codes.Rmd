@@ -532,8 +532,7 @@ bg1 <- y_hat_logistic[testing$expert_label == 0]
 
 roc1 = roc.curve(fg1, bg1, curve = T)
 pr1 = pr.curve(fg1, bg1, curve = T)
-plot(roc1)
-plot(pr1)
+
 # y_hat_logistic <- y_hat_logistic > 0.5
 # y_hat_logistic[which(y_hat_logistic == FALSE)] <- 0
 # y_hat_logistic[which(y_hat_logistic == TRUE)] <- 1
@@ -591,6 +590,17 @@ bg5 <- y_hat_rf[testing$expert_label == 1]
 
 roc5 = roc.curve(fg5, bg5, curve = T)
 pr5 = pr.curve(fg5, bg5, curve = T)
+
+plot(roc1, main = "logistic model Roc curve")
+plot(pr1, main = "logistic model PR curve")
+plot(roc2, main = "LDA model Roc curve")
+plot(pr2, main = "LDA model PR curve")
+plot(roc3, main = "QDA model Roc curve")
+plot(pr3, main = "QDA model PR curve")
+plot(roc4, main = "knn model Roc curve")
+plot(pr4, main = "knn model PR curve")
+plot(roc5, main = "decision tree model Roc curve")
+plot(pr5, main = "decision tree PR curve")
 
 ```
 
