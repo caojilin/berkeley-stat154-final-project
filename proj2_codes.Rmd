@@ -6,7 +6,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, fig.path = "figures/")
 # Load Required Packages
 library(caret)
 library(ggplot2)
@@ -119,17 +119,17 @@ ggplot(data = images_all) + geom_histogram(aes(x = images_all$NDAI, fill = exper
 ggplot(data = image1_nozero) + geom_histogram(aes(x = image1_nozero$CORR, fill = expert_label))
 ggplot(data = image2_nozero) + geom_histogram(aes(x = image2_nozero$CORR, fill = expert_label))
 ggplot(data = image3_nozero) + geom_histogram(aes(x = image3_nozero$CORR, fill = expert_label))
-ggplot(data = images_all) + geom_histogram(aes(x = images_all$CORR, fill = expert_label)) + ggtitle('Distribution of NDAI')
+ggplot(data = images_all) + geom_histogram(aes(x = images_all$CORR, fill = expert_label)) + ggtitle('Distribution of CORR')
 # Distribution of SD In Relation to Expert Label
 ggplot(data = image1_nozero) + geom_histogram(aes(x = image1_nozero$SD, fill = expert_label))
 ggplot(data = image2_nozero) + geom_histogram(aes(x = image2_nozero$SD, fill = expert_label))
 ggplot(data = image3_nozero) + geom_histogram(aes(x = image3_nozero$SD, fill = expert_label))
-ggplot(data = images_all) + geom_histogram(aes(x = images_all$SD, fill = expert_label)) + ggtitle('Distribution of NDAI')
+ggplot(data = images_all) + geom_histogram(aes(x = images_all$SD, fill = expert_label)) + ggtitle('Distribution of SD')
 # Distribution of RA_DF In Relation to Expert Label
 ggplot(data = image1_nozero) + geom_histogram(aes(x = image1_nozero$RA_DF, fill = expert_label))
 ggplot(data = image2_nozero) + geom_histogram(aes(x = image2_nozero$RA_DF, fill = expert_label))
 ggplot(data = image3_nozero) + geom_histogram(aes(x = image3_nozero$RA_DF, fill = expert_label))
-ggplot(data = images_all) + geom_histogram(aes(x = images_all$DF, fill = expert_label)) + ggtitle('Distribution of NDAI')
+ggplot(data = images_all) + geom_histogram(aes(x = images_all$RA_DF, fill = expert_label)) + ggtitle('Distribution of Radiance Angle DF')
 
 ```
 
@@ -138,7 +138,7 @@ ggplot(data = images_all) + geom_histogram(aes(x = images_all$DF, fill = expert_
 #2 a)
 
 ```{r}
-# Non-Trivial Split Method 1: Split each image into four squares, extract 80% training, and 20% testing from each square
+# Non-Trivial Split Method 1: Split each image into 16 squares, extract 80% training, and 20% testing from each square
 split_squares <- function(df, n) {
   list <- c()
   x_square_coordinates <- seq(range(df$x_coordinate)[1], range(df$x_coordinate)[2], length.out = n + 1)
@@ -194,8 +194,8 @@ testing <- rbind(split_one(image1_nozero, 16)$test, split_one(image2_nozero, 16)
                   split_one(image3_nozero, 16)$test)
 
 
-train_validation <- unique(rbind(training, validation))
-test <- unique(testing)
+train_validationM2 <- unique(rbind(training, validation))
+testM2 <- unique(testing)
 ```
 
 
@@ -244,9 +244,9 @@ validationM2 <- rbind(image1_all$validation,
 testM2 <- rbind(image1_all$test,
                     image2_all$test,
                     image3_all$test)
-testM2 <- unique(testM2)
+test <- unique(testM2)
 
-train_validationM2 <- unique(rbind(trainM2,validationM2))
+train_validation <- unique(rbind(trainM2,validationM2))
 
 ```
 
