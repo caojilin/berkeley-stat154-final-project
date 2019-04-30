@@ -69,10 +69,13 @@ training features, training labels, number of folds K and a loss function(option
 In this section, 
 * Logistic Regression, LDA, QDA, knn, svm, decision tree
 * ROC curves for each model
+![](figures/roc.png)
 * Precision Recall curves for each model
+![](figures/pr.png)
 
 #### 4. Diagnostics
-* A for loop for finding the optimal the number of trees in randomforest model. For each `i` in given `ntree`, train the randomforest model and evaluate the accuracy on validation dataset. 
-* A function for generating maps where the misclassification pixels are plotted in different color for further investigation ![](https://ibb.co/th4T3L8)
+* A for loop for finding the optimal the number of trees in randomforest model. For each `i` in given `ntree`, train the randomforest model and evaluate the accuracy on validation dataset.
+![](figures/ntree.png)
+* A function for generating maps where the misclassification pixels are plotted in different color for further investigation ![](figures/misclaasification.png)
 
 
