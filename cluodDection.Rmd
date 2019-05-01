@@ -715,32 +715,47 @@ plot(misclassified2$expert_label)
 
 
 ```{r, eval = False}
-mod <- lda(expert_label ~ SD + CORR + NDAI, 
+mod <- qda(expert_label ~ SD + CORR + NDAI, 
                    data = train_validation)
 y_hat <- predict(mod, testing)
 misclassified1 <- testing[y_hat$class != testing$expert_label,]
+mean(y_hat$class == testing$expert_label)
 
-mod <- lda(expert_label ~ SD + CORR + NDAI, 
+mod <- qda(expert_label ~ SD + CORR + NDAI, 
                    data = train_validationM2)
 y_hat <- predict(mod, testM2)
-misclassified1 <- testing[y_hat$class != testM2$expert_label,]
+misclassified1 <- testM2[y_hat$class != testM2$expert_label,]
+mean(y_hat$class == testM2$expert_label)
 ```
 
+```{r}
+randomforest_mod2 <- randomForest(expert_label ~ SD + CORR + NDAI, 
+                   data = train_validation,
+                   ntree = 50)
+randomforest_y_hat2 <- predict(randomforest_mod2, testing)
+misclassified1 <- testing[randomforest_y_hat2 != testing$expert_label,]
+
+randomforest_mod2 <- randomForest(expert_label ~ SD + CORR + NDAI, 
+                   data = train_validationM2,
+                   ntree = 50)
+randomforest_y_hat2 <- predict(randomforest_mod2, testM2)
+misclassified1 <- testM2[randomforest_y_hat2 != testM2$expert_label,]
+```
 
 
 ```{r, eval = False}
 # Image2 Misclassified Distribution
-
 image1_misclassified1 <- misclassified1[misclassified1$image_origin == 1,]
 df2 <- image1
 predicted_to_0_indices_2 <- as.integer(rownames(image1_misclassified1[image1_misclassified1$expert_label == 1, ]))
 predicted_to_1_indices_2 <- as.integer(rownames(image1_misclassified1[image1_misclassified1$expert_label == 0, ]))
+
 # 1 cloud , 0 no label, -1 clear, 2 predicted to -1, -2 predicted to 1,
 df2$expert_label[which(as.integer(rownames(df2)) %in% predicted_to_0_indices_2)] <- 2
 df2$expert_label[which(as.integer(rownames(df2)) %in% predicted_to_1_indices_2)] <- -2
 
 # Graph
-ggplot() + geom_point(data = df2, aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Misclassified to Cloudy", "Clear", "No Label", "Cloudy", "Misclassified to Clear"), values = c("red", "grey", "black", "white", "blue"))  + geom_point(data = df2[df2$expert_label == -2 | df2$expert_label == 2,], aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label)), size = 1) + ggtitle('Distribution of Misclassification Errors (Image 1, LDA, Split Method 2)')
+ggplot() + geom_point(data = df2, aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label))) + scale_y_reverse() + scale_color_manual("Expert Labels", labels = c("Misclassified to Cloudy", "Clear", "No Label", "Cloudy", "Misclassified to Clear"), values = c("red", "grey", "black", "white", "blue"))  + geom_point(data = df2[df2$expert_label == -2 | df2$expert_label == 2,], aes(x = x_coordinate, y = y_coordinate, color = as.factor(expert_label)), size = 1) + ggtitle('Distribution of Misclassification Errors (Image 1, Random Forest, Split Method 2)')
 ```
 
 
